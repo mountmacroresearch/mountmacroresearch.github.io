@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>标普500 预测 · Mount Macro Research</title>
+<meta name="description" content="每个交易日盘前给出标普500 当日方向，收盘后结算与复盘，并附按预测方向交易的模拟结果。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+.reads { position: absolute; right: 72px; top: 62px; width: 500px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; z-index: 2 }
+.reads div { border-top: 1px solid var(--hair); padding-top: 10px; font: 300 12.5px/1.6 var(--sans); color: var(--ink3); letter-spacing: .04em }
+.reads b { display: block; font: 400 27px/1.3 var(--num); color: var(--ink); letter-spacing: 0; margin: 1px 0 }
+.reads small { font: 300 12px/1.5 var(--sans); color: var(--ink3) }
+.cover .seg-d { margin-left: 2px }
+.assume { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; max-width: 520px }
+.assume label { display: block; font-size: 12.5px; color: var(--p-ink2); margin-bottom: 4px }
+.assume select, .assume input { width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--p-hair); border-radius: 3px; background: #fff; font-size: 13.5px; font-family: var(--num) }
+.assume .wide { grid-column: 1 / -1 }
+.costs { margin-top: 16px; max-width: 520px; font-size: 13px; color: var(--p-ink2); border-top: 1px solid var(--p-hair) }
+.costs div { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--p-hair) } .costs b { font: 500 13.5px var(--num); color: var(--p-ink) }
+.bar-cell { display: inline-block; height: 6px; background: var(--p-accent); border-radius: 0 2px 2px 0; vertical-align: 1px; margin-right: 8px }
+.method dt { font-size: 13px; font-weight: 600; margin-top: 14px } .method dt:first-child { margin-top: 0 } .method dd { font-size: 12.5px; line-height: 1.75; color: var(--p-ink2); max-width: 62ch; text-wrap: pretty }
+@media (max-width: 900px) { .assume { grid-template-columns: 1fr } }
+</style>
+</head>
+<body>
+<div class="stage-wrap"><div class="stage pre" id="stage">
+  <svg class="field" id="field" viewBox="0 0 1600 900" role="img" aria-label="按预测方向模拟交易的累计收益率，与每个交易日的涨跌和判断结果"></svg>
+  <header class="cover" style="width:560px">
+    <h1>标普500 预测</h1>
+    <p class="cover-line" id="line"></p>
+    <p class="cover-meta" id="meta"></p>
+  </header>
+  <div class="reads" id="reads" aria-live="polite"></div>
+  <footer class="foot"><div class="legend" id="legend"></div><div>模拟交易，非实际业绩</div></footer>
+</div></div>
+
+<main class="paper">
+  <div class="wrap">
+    <div class="filters" id="filters">
+      <label>区间</label><div class="seg" id="f-range"></div>
+      <label>预测方向</label><div class="seg" id="f-dir"></div>
+      <label>结果</label><div class="seg" id="f-hit"></div>
+      <span class="count" id="f-count"></span>
+    </div>
+    <section class="sec" id="ledger">
+      <div class="sec-h"><h2>逐日明细</h2><button class="btn" type="button" id="export">导出 CSV</button></div>
+      <div id="ledger-table"></div>
+    </section>
+    <section class="sec" id="months">
+      <div class="sec-h"><h2>按月</h2></div>
+      <div class="tbl-wrap"><table class="tbl" id="month-table"></table></div>
+    </section>
+    <section class="sec" id="method">
+      <div class="sec-h"><h2>模拟交易</h2></div>
+      <div class="cols">
+        <div>
+          <div class="assume" id="assume"></div>
+          <div class="costs" id="costs"></div>
+        </div>
+        <dl class="method">
+          <dt>命中率</dt>
+          <dd>SPY 常规时段开盘到收盘的涨跌方向与盘前预测一致，记为判对。</dd>
+          <dt>模拟交易</dt>
+          <dd>每天按预测方向在开盘建一手、收盘平仓。净收益 = 方向 ×（离场价 − 入场价）× 点值 − 往返费用 − 往返滑点。固定一手，不复投，不计保证金、税费与资金利息。ES 每点 50 美元，MES 每点 5 美元，一跳 0.25 点。</dd>
+          <dt>价格</dt>
+          <dd>以 ES 连续期货五分钟行情作为 MES 的代理，取美东 09:30 一桶的开盘价与收盘前最后一桶的收盘价，未校正换月与基差。标普500 基准为区间首日开盘买入并持有，不含股息；最大回撤按日终权益计算。</dd>
+        </dl>
+      </div>
+    </section>
+    <div id="foot"></div>
+  </div>
+</main>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="data/spx.js?v=82e7c87e54"></script>
+<script src="lib/engine.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script src="assets/forecast.js?v=82e7c87e54"></script>
+</body>
+</html>

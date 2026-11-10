@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>个股机会 · Mount Macro Research</title>
+<meta name="description" content="A 股与美股的个股研究：从覆盖范围到深入研究，再到 A 级公司，每家都写明核心假设、证伪条件与复核日程。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+@keyframes sweep { 0% { transform: rotate(-60deg); opacity: 0 } 8% { opacity: 1 } 88% { opacity: 1 } 100% { transform: rotate(60deg); opacity: 0 } }
+.sweep { transform-box: view-box; transform-origin: 800px 1020px; animation: sweep 2.8s cubic-bezier(.4, 0, .3, 1) .5s both; pointer-events: none }
+.a-list { border-top: 1px solid var(--p-ink) }
+.a-row { display: grid; grid-template-columns: 190px minmax(0, 1.5fr) minmax(0, 1fr) 150px; gap: 0 32px; padding: 22px 0 24px; border-bottom: 1px solid var(--p-hair); cursor: pointer; transition: background .15s }
+.a-row:hover { background: var(--p-wash) }
+.a-row h3 { font: 600 19px/1.4 var(--sans); letter-spacing: .04em } .a-row h3 small { display: block; font: 400 12.5px/1.6 var(--num); color: var(--p-ink2); letter-spacing: 0 }
+.a-row p { font-size: 14px; line-height: 1.75; text-wrap: pretty } .a-row .k { display: block; font-size: 12.5px; color: var(--p-ink2); margin-bottom: 3px }
+.a-row .clip3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden }
+.a-row .when b { display: block; font: 500 19px/1.4 var(--num) } .a-row .when { font-size: 12.5px; color: var(--p-ink2); line-height: 1.6 }
+.sub-h { font: 600 16px/1.5 var(--sans); letter-spacing: .04em; margin: 40px 0 12px }
+.funnel td, .funnel th { white-space: nowrap }
+@media (max-width: 900px) { .a-row { grid-template-columns: 1fr; gap: 12px } }
+</style>
+</head>
+<body>
+<div class="stage-wrap"><div class="stage pre" id="stage">
+  <svg class="field" id="field" viewBox="0 0 1600 900" role="img" aria-label="覆盖、深入研究与 A 级三道弧：每条射线上是同一家公司，越往上留下的越少"></svg>
+  <header class="cover" style="width:470px">
+    <h1>个股机会</h1>
+    <p class="cover-line" id="line"></p>
+    <p class="cover-meta" id="meta"></p>
+  </header>
+  <nav class="index" id="index" aria-label="A 级公司"></nav>
+  <footer class="foot"><div class="legend" id="legend"></div></footer>
+</div></div>
+
+<main class="paper">
+  <div class="wrap">
+    <div class="filters">
+      <label>市场</label><div class="seg" id="f-market"></div>
+      <label for="f-q">查找</label><input type="search" id="f-q" placeholder="公司、代码或行业">
+    </div>
+    <section class="sec" id="grade-a">
+      <div class="sec-h"><h2>A 级</h2></div>
+      <div class="a-list" id="a-list"></div>
+    </section>
+    <section class="sec" id="grade-c">
+      <div class="sec-h"><h2>深入研究后未推荐</h2><div class="seg" id="f-grade"></div></div>
+      <div id="c-table"></div>
+    </section>
+    <section class="sec" id="industry">
+      <div class="sec-h"><h2>行业判断</h2></div>
+      <div id="ind-table"></div>
+    </section>
+    <section class="sec" id="schedule">
+      <div class="sec-h"><h2>复核日程</h2></div>
+      <div class="tbl-wrap"><table class="tbl" id="sch-table"></table></div>
+    </section>
+    <section class="sec" id="review">
+      <div class="sec-h"><h2>复盘</h2></div>
+      <div class="tbl-wrap"><table class="tbl" id="rev-table"></table></div>
+      <h3 class="sub-h">逐条逻辑复核</h3>
+      <div class="tbl-wrap"><table class="tbl" id="rev-list"></table></div>
+    </section>
+    <section class="sec" id="coverage">
+      <div class="sec-h"><h2>覆盖范围</h2><div class="seg" id="f-stage"></div></div>
+      <div class="tbl-wrap"><table class="tbl funnel" id="funnel"></table></div>
+      <h3 class="sub-h">逐只查看</h3>
+      <div id="cov-table"></div>
+      <div id="limits" style="margin-top:22px"></div>
+    </section>
+    <div id="foot"></div>
+  </div>
+</main>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="data/radar.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script src="assets/stocks.js?v=82e7c87e54"></script>
+</body>
+</html>

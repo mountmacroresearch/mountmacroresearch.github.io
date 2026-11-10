@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>基础经济研究 · Mount Macro Research</title>
+<meta name="description" content="美国与欧洲的基础经济研究。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+html, body { height: 100% } body { display: flex; flex-direction: column; overflow: hidden }
+.nav { position: static; flex: none }
+.subbar { flex: none; display: flex; align-items: center; gap: 16px 22px; padding: 8px max(24px, calc((100vw - 1456px) / 2)); border-bottom: 1px solid var(--hair); background: var(--night);
+  font: 300 12.5px/1.6 var(--sans); letter-spacing: .06em; color: var(--ink3) }
+.hold { flex: 1; min-height: 0; position: relative; overflow: hidden; background: var(--night) }
+.hold iframe { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border: 0; background: var(--night); transform-origin: 0 0 }
+@media (max-width: 859px) { .subbar { padding: 8px 16px } }
+</style>
+</head>
+<body>
+<div class="subbar">
+  <a class="link" href="macro.html">返回经济</a>
+  <span class="seg-d" id="s-region"></span>
+</div>
+<div class="hold" id="hold"><iframe id="frame" title="基础经济研究"></iframe></div>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script>
+(function () {
+  const H = window.MMR_HUB;
+  Site.nav('macro.html');
+  const q = new URLSearchParams(location.search);
+  let region = H.macro.some(m => m.key === q.get('region')) ? q.get('region') : H.macro[0].key;
+  const frame = document.getElementById('frame'), hold = document.getElementById('hold');
+  function go() {
+    const m = H.macro.filter(x => x.key === region)[0];
+    frame.src = m.home + '?v=' + m.ver;
+    frame.title = m.title;
+    document.title = m.title + ' · Mount Macro Research';
+    history.replaceState(null, '', 'view.html?region=' + encodeURIComponent(region));
+  }
+  // 窄屏或竖屏上按横向的桌面尺寸排版再整体缩小，整张图照样完整显示
+  function fitFrame() {
+    const w = hold.clientWidth, h = hold.clientHeight, bw = 1280, bh = 720;
+    if (w >= 900 && w / h >= 1.05) { frame.style.width = '100%'; frame.style.height = '100%'; frame.style.transform = 'none'; return; }
+    const s = Math.min(w / bw, h / bh);
+    frame.style.width = bw + 'px'; frame.style.height = bh + 'px';
+    frame.style.transform = 'translate(' + Math.round((w - bw * s) / 2) + 'px, 0) scale(' + s + ')';
+  }
+  Site.seg(document.getElementById('s-region'), H.macro.map(m => [m.key, m.name]), region, v => { region = v; go(); });
+  window.addEventListener('resize', fitFrame);
+  fitFrame(); go();
+})();
+</script>
+</body>
+</html>

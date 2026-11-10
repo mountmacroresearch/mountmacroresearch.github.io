@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>研报 · Mount Macro Research</title>
+<meta name="description" content="Mount Macro Research 专题研报。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+.mast { position: relative; background: var(--night); color: var(--ink); overflow: hidden; border-bottom: 1px solid var(--hair) }
+.mast::after { content: ""; position: absolute; left: 50%; bottom: -260px; width: 1500px; height: 320px; margin-left: -750px; border-radius: 50%; background: radial-gradient(closest-side, rgba(217, 181, 108, .2), rgba(217, 181, 108, 0)); pointer-events: none }
+.mast .wrap { position: relative; z-index: 1; padding-top: 54px; padding-bottom: 46px }
+.mast .kicker { font: 300 13px/1.6 var(--sans); letter-spacing: .12em; color: var(--gold) } .mast .kicker a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--gold2) }
+.mast h1 { font: 300 36px/1.45 var(--sans); letter-spacing: .08em; margin-top: 12px; max-width: 24em; text-wrap: balance }
+.mast .sub { font: 300 16px/1.8 var(--sans); color: var(--ink2); margin-top: 10px; max-width: 46em; text-wrap: pretty }
+.mast .facts { display: flex; gap: 12px 34px; flex-wrap: wrap; margin-top: 26px }
+.mast .facts div { font: 300 12px/1.5 var(--sans); color: var(--ink3); letter-spacing: .04em } .mast .facts b { display: block; font: 400 16px/1.5 var(--num); color: var(--ink) }
+.mast .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 22px; align-items: center } .mast .chips span { font: 300 12.5px/1.7 var(--sans); color: var(--ink2); padding: 0 9px; border: 1px solid var(--hair); border-radius: 2px }
+.mast .acts { display: flex; gap: 26px; margin-top: 26px }
+.reader { display: grid; grid-template-columns: 230px minmax(0, 760px); gap: 70px; padding-top: 54px; padding-bottom: 70px }
+.toc { position: sticky; top: 76px; align-self: start; font-size: 13.5px; line-height: 1.6 }
+.toc h2 { font: 500 12.5px/1.6 var(--sans); color: var(--p-ink2); letter-spacing: .08em; padding-bottom: 10px; border-bottom: 1px solid var(--p-ink) }
+.toc a { display: block; padding: 8px 0; color: var(--p-ink2); text-decoration: none; border-bottom: 1px solid var(--p-hair); text-wrap: pretty } .toc a:hover, .toc a.on { color: var(--p-ink) } .toc a.on { font-weight: 600 }
+.toc .back { margin-top: 18px; border: 0; color: var(--p-accent) }
+.prose { font-size: 16px; line-height: 1.95; color: var(--p-ink) }
+.prose .lead { font-size: 17px; line-height: 1.95; padding: 2px 0 2px 22px; border-left: 2px solid var(--p-accent); margin-bottom: 38px }
+.prose p { margin: 0 0 16px; text-align: justify; text-wrap: pretty } .prose .lead p:last-child { margin-bottom: 0 }
+.prose h2 { font: 600 23px/1.5 var(--sans); letter-spacing: .02em; margin: 58px 0 18px; padding-top: 26px; border-top: 1px solid var(--p-ink); scroll-margin-top: 70px }
+.prose h3 { font: 600 17.5px/1.6 var(--sans); margin: 34px 0 10px } .prose h4 { font: 600 15.5px/1.6 var(--sans); margin: 24px 0 8px }
+.prose strong { font-weight: 600 } .prose a { color: var(--p-accent); text-underline-offset: 3px }
+.prose ul, .prose ol { margin: 0 0 16px; padding-left: 1.4em } .prose li { margin: 6px 0 }
+.prose blockquote { margin: 0 0 16px; padding-left: 20px; border-left: 2px solid var(--p-hair); color: var(--p-ink2) }
+.prose table { width: 100%; border-collapse: collapse; font-size: 13.5px; line-height: 1.6; margin: 24px 0 30px }
+.prose table caption { text-align: left; font-weight: 600; font-size: 14px; padding-bottom: 10px; caption-side: top }
+.prose th { font-weight: 500; font-size: 12.5px; color: var(--p-ink2); text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--p-ink); white-space: nowrap }
+.prose td { padding: 10px; border-bottom: 1px solid var(--p-hair); vertical-align: top; font-variant-numeric: tabular-nums }
+.prose th:first-child, .prose td:first-child { padding-left: 0 }
+.prose .chart-container { margin: 30px 0 36px; padding: 18px 0 14px; border-top: 1px solid var(--p-hair); border-bottom: 1px solid var(--p-hair) }
+.prose .chart-title { font-weight: 600; font-size: 14.5px; line-height: 1.6; margin-bottom: 10px }
+.prose .chart-container svg { display: block; width: 100%; height: auto; background: #fff }
+.prose .chart-note { font-size: 12.5px; line-height: 1.7; color: var(--p-ink2); margin-top: 10px }
+.prose .summary-box, .prose .highlight-box { font-size: 16.5px; padding: 2px 0 2px 22px; border-left: 2px solid var(--p-accent); margin: 0 0 30px }
+.prose .scenario { margin: 16px 0; padding: 16px 0 6px; border-top: 1px solid var(--p-hair) } .prose .scenario h4 { margin-top: 0 }
+.prose .scenario.baseline { border-top-color: var(--p-ink) } .prose .scenario.upside { border-top-color: var(--p-warm) } .prose .scenario.downside { border-top-color: var(--p-cool) }
+.prose .timeline-box { margin: 20px 0 28px; border-top: 1px solid var(--p-ink) } .prose .timeline-item { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--p-hair); font-size: 14.5px; line-height: 1.8 }
+.prose .timeline-date { font-family: var(--num); color: var(--p-accent) }
+.prose .num { font-family: var(--num) }
+.after { border-top: 1px solid var(--p-ink); margin-top: 64px; padding-top: 28px }
+.after h2 { font: 600 17px/1.5 var(--sans); margin-bottom: 12px }
+.after .rel a { display: grid; grid-template-columns: 100px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--p-hair); text-decoration: none; color: var(--p-ink); font-size: 14.5px } .after .rel a:hover { background: var(--p-wash) } .after .rel span { font-family: var(--num); color: var(--p-ink2) }
+.disclaimer { margin-top: 40px; font-size: 12.5px; line-height: 1.85; color: var(--p-ink2); text-align: justify } .disclaimer p { margin: 0 0 8px } .disclaimer .disclaimer-title { font-weight: 600; color: var(--p-ink) }
+.pn { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 44px } .pn a { display: block; padding: 16px 0; border-top: 1px solid var(--p-ink); text-decoration: none; color: var(--p-ink); font-size: 15px; line-height: 1.6 } .pn a span { display: block; font-size: 12.5px; color: var(--p-ink2) } .pn a:last-child { text-align: right }
+@media (max-width: 1000px) { .reader { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-top: 30px } .mast .wrap { padding-top: 34px; padding-bottom: 34px } .toc { position: static } .mast h1 { font-size: 26px } .prose { font-size: 15.5px } .prose table { display: block; overflow-x: auto } }
+@media print { .mast { background: #fff; color: #000 } .mast h1, .mast .sub, .mast .facts b { color: #000 } .toc, .mast .acts, .pn { display: none } .reader { display: block } }
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap" id="mast"></div></header>
+<main class="paper">
+  <div class="wrap reader">
+    <aside class="toc" id="toc"></aside>
+    <div>
+      <article class="prose" id="prose"></article>
+      <div class="after" id="after"></div>
+    </div>
+  </div>
+  <div class="wrap"><div id="foot"></div></div>
+</main>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script src="assets/report.js?v=82e7c87e54"></script>
+</body>
+</html>

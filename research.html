@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>专题研究 · Mount Macro Research</title>
+<meta name="description" content="专题研报：围绕美国、中国与全球跨市场的具体问题展开，可按资产串联阅读。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+.lib td:nth-child(2) { min-width: 320px } .lib h3 { font: 600 16px/1.5 var(--sans); letter-spacing: .02em } .lib .tags { display: flex; gap: 5px; flex-wrap: wrap; max-width: 320px }
+.chips { margin-top: 18px; display: flex; gap: 6px 8px; flex-wrap: wrap; align-items: center; font: 300 12.5px/1.6 var(--sans); color: var(--ink3); letter-spacing: .06em }
+.chips button { background: none; border: 1px solid var(--hair); border-radius: 2px; padding: 2px 10px; font: 300 12.5px/1.7 var(--sans); letter-spacing: .08em; color: var(--ink2); transition: color .2s, border-color .2s, background .2s }
+.chips button small { font: 400 11.5px var(--num); color: var(--gold); margin-left: 6px; letter-spacing: 0 }
+.chips button:hover { color: var(--ink); border-color: var(--gold2) }
+.chips button[aria-pressed="true"] { color: var(--ink); border-color: var(--gold); background: rgba(207, 176, 122, .14) }
+</style>
+</head>
+<body>
+<div class="stage-wrap"><div class="stage pre" id="stage">
+  <svg class="field" id="field" viewBox="0 0 1600 900" role="img" aria-label="每篇研报按日期排在三条地区带上，可以按资产把相关研报连起来"></svg>
+  <header class="cover" style="width:960px">
+    <h1>专题研究</h1>
+    <p class="cover-line" id="line"></p>
+    <p class="cover-meta" id="meta"></p>
+    <div class="chips" role="group" aria-label="按资产连线"><span id="chips" style="display:contents"></span></div>
+  </header>
+  <footer class="foot"><div class="legend" id="legend"></div></footer>
+</div></div>
+
+<main class="paper">
+  <div class="wrap">
+    <div class="filters">
+      <label>地区</label><div class="seg" id="f-lane"></div>
+      <label for="f-q">查找</label><input type="search" id="f-q" placeholder="题目或资产">
+      <span class="count" id="f-count"></span>
+    </div>
+    <section class="sec" id="library">
+      <div class="sec-h"><h2>全部研报</h2></div>
+      <div class="tbl-wrap"><table class="tbl lib" id="lib"></table></div>
+    </section>
+    <div id="foot"></div>
+  </div>
+</main>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script src="assets/research.js?v=82e7c87e54"></script>
+</body>
+</html>

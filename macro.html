@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>基础经济研究 · Mount Macro Research</title>
+<meta name="description" content="美国与欧洲的基础经济研究：逐个主题看现状，再看主题之间如何传导。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/site.css?v=82e7c87e54">
+<style>
+.enter { position: absolute; display: flex; justify-content: center; width: 520px; margin-left: -260px; z-index: 2 }
+.region h2 { font: 600 22px/1.4 var(--sans); letter-spacing: .03em } .region h2 small { font: 400 12.5px/1.6 var(--num); color: var(--p-ink2); margin-left: 10px; letter-spacing: 0 }
+.region .judg { font-size: 17px; line-height: 1.75; font-weight: 600; margin-top: 10px; text-wrap: pretty }
+.region .lead-p { color: var(--p-ink2); margin-top: 8px; text-wrap: pretty }
+.region .kvs { margin: 26px 0 8px; grid-template-columns: repeat(3, 1fr) } .region .kv-b dd { font-size: 22px }
+.region .go { margin-top: 26px }
+</style>
+</head>
+<body>
+<div class="stage-wrap"><div class="stage pre" id="stage">
+  <svg class="field" id="field" viewBox="0 0 1600 900" role="img" aria-label="每个地区一个圆盘：圆周上是研究主题，圆内的线是连接主题的跨主题研究"></svg>
+  <header class="cover" style="width:560px">
+    <h1>基础经济研究</h1>
+    <p class="cover-line">逐个主题看现状，再看主题之间如何传导。只解释已经发生的数据，不做预测。</p>
+    <p class="cover-meta" id="meta"></p>
+  </header>
+  <div id="enters"></div>
+  <footer class="foot"><div class="legend" id="legend"></div></footer>
+</div></div>
+
+<main class="paper">
+  <div class="wrap">
+    <section class="sec">
+      <div class="cols" id="regions"></div>
+    </section>
+    <div id="foot"></div>
+  </div>
+</main>
+
+<script src="data/hub.js?v=82e7c87e54"></script>
+<script src="assets/site.js?v=82e7c87e54"></script>
+<script src="assets/macro.js?v=82e7c87e54"></script>
+</body>
+</html>
