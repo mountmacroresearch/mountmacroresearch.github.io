@@ -14,9 +14,10 @@
   const DEG = Math.PI / 180, TH0 = -13.6 * DEG, TH1 = 14.6 * DEG;
   const day = iso => Date.parse(String(iso).slice(0, 10) + 'T00:00:00Z');
   const today = Site.today();
-  const T0 = day([H.spx.first, H.reports[0].date].sort()[0].slice(0, 7) + '-01');
-  const endRef = new Date(day(today) + 45 * 864e5);
-  const T1 = Date.UTC(endRef.getUTCFullYear(), endRef.getUTCMonth() + 1, 0);
+  // 滚动窗口：过去四个月到未来一个月，每天占的宽度固定，更早的内容在各栏目页里
+  const now = new Date(day(today));
+  const T0 = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 4, now.getUTCDate());
+  const T1 = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate());
   const thMs = ms => TH0 + (TH1 - TH0) * (ms - T0) / (T1 - T0);
   const th = iso => thMs(day(iso));
   const pt = (r, a) => [C.x + r * Math.sin(a), C.y - r * Math.cos(a)];
@@ -99,12 +100,12 @@
       sv('path', { d: arc(R[k], TH0, aT), fill: 'none', stroke: '#cfb07a', 'stroke-opacity': .36, 'stroke-width': 1 }),
       sv('path', { d: arc(R[k], aT, TH1), fill: 'none', stroke: '#cfb07a', 'stroke-opacity': .42, 'stroke-width': 1, 'stroke-dasharray': '1 7', 'stroke-linecap': 'round' }));
   });
-  for (let d = new Date(T0); d.getTime() <= T1; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
-    const a = thMs(d.getTime()), p0 = pt(R.stock + 78, a), p1 = pt(R.stock + 86, a), pl = pt(R.stock + 102, a);
+  Site.months(T0, T1, (R.stock + 102) * (TH1 - TH0)).forEach(([t, label]) => {
+    const a = thMs(t), p0 = pt(R.stock + 78, a), p1 = pt(R.stock + 86, a), pl = pt(R.stock + 102, a);
     frame.append(
       sv('line', { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: '#cfb07a', 'stroke-opacity': .5 }),
-      sv('text', { class: 't3', x: pl[0], y: pl[1], 'text-anchor': 'middle' }, (d.getUTCMonth() + 1) + '月'));
-  }
+      sv('text', { class: 't3', x: pl[0], y: pl[1], 'text-anchor': 'middle' }, label));
+  });
   const r0 = pt(R.sun + 5, aT), r1 = pt(R.stock + 86, aT), rl = pt(R.stock + 102, aT);
   frame.append(
     sv('line', { x1: r0[0], y1: r0[1], x2: r1[0], y2: r1[1], stroke: '#f1eadb', 'stroke-opacity': .5, 'stroke-width': 1 }),
@@ -140,6 +141,7 @@
   let lastX = -1e9;
   const latestReport = H.reports[H.reports.length - 1];
   H.reports.forEach(r => {
+    if (!inWin(r.date)) return;
     let a = th(r.date), p = pt(R.topic, a);
     if (p[0] - lastX < 13) { a += (13 - (p[0] - lastX)) / R.topic; p = pt(R.topic, a); }
     lastX = p[0];
@@ -164,6 +166,7 @@
   const SC = 24, CAP = 2.5;
   const bars = sv('g');
   S.lite.forEach(r => {
+    if (!inWin(r.d)) return;
     const a = th(r.d), p0 = pt(R.index, a);
     const g = sv('g', { class: 'hot dim rise' });
     if (r.ret == null || r.hit == null || !r.official) {
@@ -183,7 +186,7 @@
       kv('SPY 开盘到收盘', fmt.pct(r.ret)), kv('结果', !r.official ? '未计入' : r.hit == null ? '待结算' : r.hit ? '判对' : '判错'), kv('置信度', r.conf + ' / 10')]);
     bars.append(g);
   });
-  (function () {
+  if (inWin(S.latest.date)) (function () {
     const L = S.latest, a = th(L.date), p = pt(R.index, a), q = pt(R.index, aT + 0.9 * DEG);
     const tipY = p[1] - Math.max(0, Math.min(L.spyReturn || 0, CAP)) * SC - 8;
     const g = sv('g', { class: 'hot rise' });
@@ -206,7 +209,7 @@
     hover(g, () => [el('b', { text: d0 + ' 复盘' }), kv('核对原判断', n + ' 项')]);
     stocks.append(g);
   });
-  (function () {
+  if (inWin(RD.asOf)) (function () {
     const d0 = RD.asOf.slice(0, 10), p = pt(R.stock, th(d0));
     const g = sv('g', { class: 'hot rise' });
     g.append(sv('circle', { cx: p[0], cy: p[1], r: 15, fill: 'url(#node)' }), sv('circle', { cx: p[0], cy: p[1], r: 2.8, fill: '#fff8e6' }),
@@ -216,10 +219,9 @@
   })();
   const aByDate = {};
   RD.A.forEach(c => { const k = String(c.nextCheck).slice(0, 10); (aByDate[k] = aByDate[k] || []).push(c); });
-  let beyond = 0;
+  const tags = [];   // 大圈的标注；相邻几天挨得太近时合用一个，日期和事项数按先后列出
   RD.dueByDate.forEach(([d0, n]) => {
-    if (day(d0) < day(today)) return;
-    if (!inWin(d0)) { beyond += n; return; }
+    if (day(d0) < day(today) || !inWin(d0)) return;
     const a = th(d0), p = pt(R.stock, a), names = aByDate[d0] || [], big = n >= 8 || names.length > 0;
     const r = big ? 3 + Math.sqrt(n) * 0.82 : 2;
     const g = sv('g', { class: 'hot dim rise' });
@@ -227,15 +229,20 @@
     else g.append(sv('circle', { cx: p[0], cy: p[1], r: r, fill: '#cfb07a', opacity: .75 }));
     names.forEach((c, i) => { const q = pt(R.stock + r + 8 + i * 7, a); g.append(sv('circle', { cx: q[0], cy: q[1], r: 2.5, fill: '#ecd092' })); });
     if (big) {
-      const b0 = pt(R.stock - r - 18, a), b1 = pt(R.stock - r - 35, a);
-      g.append(sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, fmt.md(d0)),
-        sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, n + ' 项'));
+      const prev = tags[tags.length - 1];
+      if (prev && R.stock * (a - prev.a1) < 44) { prev.a1 = a; prev.r = Math.max(prev.r, r); prev.d.push(fmt.md(d0)); prev.n.push(n); }
+      else tags.push({ g: g, a0: a, a1: a, r: r, d: [fmt.md(d0)], n: [n] });
     }
     g.append(sv('circle', { cx: p[0], cy: p[1], r: Math.max(r, 12), fill: 'transparent' }));
     link(g, 'stocks.html#schedule', d0 + ' 复核');
     hover(g, () => [el('b', { text: d0 + ' 计划复核' }), kv('排定事项', n + ' 项'),
       names.length ? el('div', { text: 'A 级：' + names.map(c => c.name).join('、') }) : null].filter(Boolean));
     stocks.append(g);
+  });
+  tags.forEach(t => {
+    const a = (t.a0 + t.a1) / 2, b0 = pt(R.stock - t.r - 18, a), b1 = pt(R.stock - t.r - 35, a);
+    t.g.append(sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, t.d.join('、')),
+      sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, t.n.join('、') + ' 项'));
   });
   field.append(stocks);
 

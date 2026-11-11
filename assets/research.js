@@ -12,10 +12,13 @@
   const laneY = {};
   LANES.forEach((l, i) => { laneY[l] = 600 + (i - (LANES.length - 1) / 2) * (LANES.length > 2 ? 150 : 200); });
   const day = iso => Date.parse(String(iso).slice(0, 10) + 'T00:00:00Z');
-  const today = Site.today();
-  const T0 = day(R[0].date.slice(0, 7) + '-01'), T1 = Math.max(day(today), day(R[R.length - 1].date)), X0 = 300, X1 = 1400;
+  const today = Site.today(), latest = R[R.length - 1], X0 = 300, X1 = 1400;
+  // 滚动窗口：默认看过去四个月，这段时间没有新研报时往前延到最新一篇所在的月份；更早的切到“全部”看
+  const now = new Date(day(today)), T1 = Math.max(day(today), day(latest.date));
+  const RECENT0 = Math.min(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 4, now.getUTCDate()), day(latest.date.slice(0, 7) + '-01'));
+  const ALL0 = day(R[0].date.slice(0, 7) + '-01'), older = day(R[0].date) < RECENT0;
+  let T0 = RECENT0, shown = R;
   const xOf = iso => X0 + (X1 - X0) * (day(iso) - T0) / (T1 - T0);
-  const latest = R[R.length - 1];
   const href = r => 'report.html?id=' + encodeURIComponent(r.id);
   const assetName = k => (k === 'A股' ? 'A 股' : k);
   // 按视觉宽度截断：汉字算 1，拉丁字母与数字算 0.55
@@ -23,58 +26,54 @@
 
   field.append(Site.dust(210, 51, [0, 0, 1600, 860]), Site.horizon(888));
 
-  // 地区带、月份、今天
-  const frame = sv('g', { class: 'rise', 'aria-hidden': 'true' });
-  LANES.forEach(name => {
-    const y = laneY[name], n = R.filter(r => r.lane === name).length;
-    frame.append(sv('line', { x1: X0 - 30, y1: y, x2: X1 + 70, y2: y, stroke: '#cfb07a', 'stroke-opacity': .3 }),
-      sv('text', { class: 't', x: X0 - 48, y: y - 2, 'text-anchor': 'end' }, name), sv('text', { class: 't3', x: X0 - 48, y: y + 17, 'text-anchor': 'end' }, n + ' 篇'));
-  });
-  for (let d = new Date(T0); d.getTime() <= T1; d = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))) {
-    const x = X0 + (X1 - X0) * (d.getTime() - T0) / (T1 - T0);
-    frame.append(sv('line', { x1: x, y1: 806, x2: x, y2: 814, stroke: '#cfb07a', 'stroke-opacity': .5 }), sv('text', { class: 't3', x: x, y: 834, 'text-anchor': 'middle' }, (d.getUTCMonth() + 1) + '月'));
-  }
-  frame.append(sv('line', { x1: X1, y1: 330, x2: X1, y2: 814, stroke: '#f1eadb', 'stroke-opacity': .45 }),
-    sv('text', { class: 't2', x: X1 + 10, y: 834 }, '今天 ', sv('tspan', { class: 'tn' }, fmt.md(today))));
-  field.append(frame);
-
-  // 资产连线画在星的下面
-  const trail = sv('g', { style: 'pointer-events:none' });
-  field.append(trail);
-
-  // 星：同一条带上日期挨得近的上下错开，名字斜着写，互不遮挡
-  const stars = sv('g');
+  // 地区带、月份、今天；资产连线画在星的下面。切换范围时整张图重画
+  const frame = sv('g', { class: 'rise', 'aria-hidden': 'true' }), trail = sv('g', { style: 'pointer-events:none' }), stars = sv('g');
+  field.append(frame, trail, stars);
   const pos = new Map();
   const LEVELS = [0, -30, 30, -60, 60];
-  const lastAt = {};
-  R.forEach(r => {
-    const x = xOf(r.date), seen = lastAt[r.lane] || (lastAt[r.lane] = {});
-    const lv = LEVELS.find(l => seen[l] === undefined || x - seen[l] >= 36);
-    const level = lv === undefined ? 0 : lv;
-    seen[level] = x;
-    const y = laneY[r.lane] + level;
-    pos.set(r.id, [x, y]);
-    const newest = r === latest, core = newest ? 18 : 13, orbit = core + 4;
-    const g = sv('g', { class: 'hot dim rise', 'data-id': r.id, tabindex: '0', role: 'link', 'aria-label': r.date + ' ' + r.title });
-    g.append(sv('circle', { cx: x, cy: y, r: core, fill: 'url(#node)' }), sv('circle', { cx: x, cy: y, r: newest ? 3.2 : 2.4, fill: '#fff8e6' }));
-    for (let i = 0; i < r.charts; i++) { const a = -Math.PI / 2 + i / r.charts * Math.PI * 2; g.append(sv('circle', { cx: x + orbit * Math.cos(a), cy: y + orbit * Math.sin(a), r: 1.15, fill: '#ecd092', opacity: .85 })); }
-    g.append(sv('text', { class: newest ? 't' : 't2', x: x + orbit + 8, y: y - 4, transform: 'rotate(-30 ' + x + ' ' + y + ')' }, sv('tspan', { class: 'tn' }, fmt.md(r.date) + ' '), clipW(r.title.split('：')[0], 16)),
-      sv('circle', { cx: x, cy: y, r: 20, fill: 'transparent' }));
-    const open = () => { location.href = href(r); };
-    g.addEventListener('click', open); g.addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
-    Site.hover(g, () => [el('b', { text: r.title }), r.subtitle ? el('div', { text: r.subtitle }) : null, kv('日期', r.date), kv('图表', r.charts + ' 张'),
-      r.assetKeys.length ? kv('资产', r.assetKeys.map(assetName).join('、')) : null].filter(Boolean));
-    stars.append(g);
-  });
-  field.append(stars);
+  function drawMap() {
+    shown = R.filter(r => day(r.date) >= T0);
+    frame.replaceChildren(); stars.replaceChildren(); pos.clear();
+    LANES.forEach(name => {
+      const y = laneY[name], n = shown.filter(r => r.lane === name).length;
+      frame.append(sv('line', { x1: X0 - 30, y1: y, x2: X1 + 70, y2: y, stroke: '#cfb07a', 'stroke-opacity': .3 }),
+        sv('text', { class: 't', x: X0 - 48, y: y - 2, 'text-anchor': 'end' }, name), sv('text', { class: 't3', x: X0 - 48, y: y + 17, 'text-anchor': 'end' }, n + ' 篇'));
+    });
+    Site.months(T0, T1, X1 - X0).forEach(([t, label]) => {
+      const x = X0 + (X1 - X0) * (t - T0) / (T1 - T0);
+      frame.append(sv('line', { x1: x, y1: 806, x2: x, y2: 814, stroke: '#cfb07a', 'stroke-opacity': .5 }), sv('text', { class: 't3', x: x, y: 834, 'text-anchor': 'middle' }, label));
+    });
+    frame.append(sv('line', { x1: X1, y1: 330, x2: X1, y2: 814, stroke: '#f1eadb', 'stroke-opacity': .45 }),
+      sv('text', { class: 't2', x: X1 + 10, y: 834 }, '今天 ', sv('tspan', { class: 'tn' }, fmt.md(today))));
+
+    // 星：同一条带上日期挨得近的上下错开，名字斜着写，互不遮挡
+    const lastAt = {};
+    shown.forEach(r => {
+      const x = xOf(r.date), seen = lastAt[r.lane] || (lastAt[r.lane] = {});
+      const lv = LEVELS.find(l => seen[l] === undefined || x - seen[l] >= 36);
+      const level = lv === undefined ? 0 : lv;
+      seen[level] = x;
+      const y = laneY[r.lane] + level;
+      pos.set(r.id, [x, y]);
+      const newest = r === latest, core = newest ? 18 : 13, orbit = core + 4;
+      const g = sv('g', { class: 'hot dim rise', 'data-id': r.id, tabindex: '0', role: 'link', 'aria-label': r.date + ' ' + r.title });
+      g.append(sv('circle', { cx: x, cy: y, r: core, fill: 'url(#node)' }), sv('circle', { cx: x, cy: y, r: newest ? 3.2 : 2.4, fill: '#fff8e6' }));
+      for (let i = 0; i < r.charts; i++) { const a = -Math.PI / 2 + i / r.charts * Math.PI * 2; g.append(sv('circle', { cx: x + orbit * Math.cos(a), cy: y + orbit * Math.sin(a), r: 1.15, fill: '#ecd092', opacity: .85 })); }
+      g.append(sv('text', { class: newest ? 't' : 't2', x: x + orbit + 8, y: y - 4, transform: 'rotate(-30 ' + x + ' ' + y + ')' }, sv('tspan', { class: 'tn' }, fmt.md(r.date) + ' '), clipW(r.title.split('：')[0], 16)),
+        sv('circle', { cx: x, cy: y, r: 20, fill: 'transparent' }));
+      const open = () => { location.href = href(r); };
+      g.addEventListener('click', open); g.addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
+      Site.hover(g, () => [el('b', { text: r.title }), r.subtitle ? el('div', { text: r.subtitle }) : null, kv('日期', r.date), kv('图表', r.charts + ' 张'),
+        r.assetKeys.length ? kv('资产', r.assetKeys.map(assetName).join('、')) : null].filter(Boolean));
+      stars.append(g);
+    });
+    drawChips();
+  }
 
   // 按资产连线
-  const assets = {};
-  R.forEach(r => r.assetKeys.forEach(k => { (assets[k] = assets[k] || []).push(r); }));
-  const order = Object.keys(assets).sort((a, b) => assets[b].length - assets[a].length);
   const stageEl = document.getElementById('stage');
   const chips = document.getElementById('chips');
-  let pinned = null;
+  let assets = {}, pinned = null;
   function show(k, quiet) {
     trail.replaceChildren();
     stars.querySelectorAll('g').forEach(g => g.classList.remove('on'));
@@ -86,20 +85,28 @@
     assets[k].forEach(r => { const g = stars.querySelector('[data-id="' + r.id + '"]'); if (g) g.classList.add('on'); });
   }
   const press = () => [...chips.children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === pinned ? 'true' : 'false'));
-  order.forEach(k => {
-    const b = el('button', { type: 'button', data: { k: k }, 'aria-pressed': 'false' }, assetName(k), el('small', { text: assets[k].length }));
-    b.addEventListener('pointerenter', () => show(k)); b.addEventListener('pointerleave', () => show(pinned, true));
-    b.addEventListener('focus', () => show(k)); b.addEventListener('blur', () => show(pinned, true));
-    b.addEventListener('click', () => { pinned = pinned === k ? null : k; press(); show(pinned, true); });
-    chips.append(b);
-  });
-  // 打开页面时先连好一种资产：选讨论过它的研报最接近半数的那种，线最有区分度
-  pinned = order.slice().sort((a, b) => Math.abs(assets[a].length - R.length / 2) - Math.abs(assets[b].length - R.length / 2))[0] || null;
-  press(); show(pinned, true);
+  function drawChips() {
+    assets = {};
+    shown.forEach(r => r.assetKeys.forEach(k => { (assets[k] = assets[k] || []).push(r); }));
+    const order = Object.keys(assets).sort((a, b) => assets[b].length - assets[a].length);
+    chips.replaceChildren(...order.map(k => {
+      const b = el('button', { type: 'button', data: { k: k }, 'aria-pressed': 'false' }, assetName(k), el('small', { text: assets[k].length }));
+      b.addEventListener('pointerenter', () => show(k)); b.addEventListener('pointerleave', () => show(pinned, true));
+      b.addEventListener('focus', () => show(k)); b.addEventListener('blur', () => show(pinned, true));
+      b.addEventListener('click', () => { pinned = pinned === k ? null : k; press(); show(pinned, true); });
+      return b;
+    }));
+    // 先连好一种资产：选讨论过它的研报最接近半数的那种，线最有区分度；切换范围后原来那种还在就留着
+    if (!assets[pinned]) pinned = order.slice().sort((a, b) => Math.abs(assets[a].length - shown.length / 2) - Math.abs(assets[b].length - shown.length / 2))[0] || null;
+    press(); show(pinned, true);
+  }
+  drawMap();
 
   // 封面与图例
   document.getElementById('line').textContent = fmt.cn(latest.date) + '　' + latest.title;
-  add(document.getElementById('meta'), el('span', null, el('b', { text: R.length + ' 篇' }), ' 研报'), el('a', { class: 'link', href: href(latest), text: '读最新一篇' }));
+  const range = el('span', { class: 'seg-d' });
+  add(document.getElementById('meta'), el('span', null, el('b', { text: R.length + ' 篇' }), ' 研报'), older ? range : null, el('a', { class: 'link', href: href(latest), text: '读最新一篇' }));
+  if (older) Site.seg(range, [['recent', '近 4 个月'], ['all', '全部']], 'recent', v => { T0 = v === 'all' ? ALL0 : RECENT0; drawMap(); });
   const mini = (...kids) => sv('svg', { viewBox: '0 0 26 12', 'aria-hidden': 'true' }, ...kids);
   add(document.getElementById('legend'),
     el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 6, fill: 'url(#node)' }), sv('circle', { cx: 13, cy: 6, r: 2, fill: '#fff8e6' })), '研报'),

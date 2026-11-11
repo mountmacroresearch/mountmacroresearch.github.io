@@ -145,6 +145,16 @@
   }
   // 访客所在地的今天
   function today() { const d = new Date(), p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+  // 时间轴的月份刻度：t0 之后的每个月初，挤不下时隔月或隔季标；第一个刻度和每年 1 月写上年份。width 是轴的长度
+  function months(t0, t1, width) {
+    const per = width / ((t1 - t0) / 2629746e3), step = [1, 2, 3, 6, 12].find(s => s * per >= 64) || 12, out = [], s = new Date(t0);
+    for (let t = Date.UTC(s.getUTCFullYear(), s.getUTCMonth() + (s.getUTCDate() > 1 ? 1 : 0), 1); t <= t1;) {
+      const d = new Date(t), m = d.getUTCMonth();
+      if (m % step === 0) out.push([t, (out.length && m ? '' : d.getUTCFullYear() + '年') + (m + 1) + '月']);
+      t = Date.UTC(d.getUTCFullYear(), m + 1, 1);
+    }
+    return out;
+  }
 
   // 舞台 SVG 的公共定义：光晕、节点、星尘
   function defs(svgEl) {
@@ -212,5 +222,5 @@
   // 往已有节点里追加内容：数组会展开，空值跳过（原生 append 会把 null 写成文字）
   function add(n, ...kids) { append(n, kids); return n; }
 
-  window.Site = { add, el, sv, fmt, signed, nav, stage, fit, tip, untip, hover, kv, dossier, closeDossier, block, pagefoot, today, defs, dust, rng, horizon, pager, seg };
+  window.Site = { add, el, sv, fmt, signed, nav, stage, fit, tip, untip, hover, kv, dossier, closeDossier, block, pagefoot, today, months, defs, dust, rng, horizon, pager, seg };
 })();
