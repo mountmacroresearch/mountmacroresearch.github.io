@@ -26,6 +26,8 @@
   const horizonCN = h => HORIZON[h] || (h && !/_/.test(h) ? String(h).replace(/\s*months?$/i, ' 个月') : null);
   const group = (arr, key) => { const m = new Map(); arr.forEach(x => { const k = x[key]; if (!m.has(k)) m.set(k, []); m.get(k).push(x); }); return m; };
   const clipT = (t, n) => (t && t.length > n ? t.slice(0, n - 1) + '…' : t || '');
+  // 排定的时间点：北京时间，精确到分钟
+  const at = iso => { const s = String(iso || ''); return s.length > 10 ? s.slice(0, 10) + ' ' + s.slice(11, 16) : s || '—'; };
 
   const companies = D.companies, byId = new Map(companies.map(c => [c.id, c]));
   const cov = D.coverage, covById = new Map(cov.map(c => [c.id, c]));
@@ -246,14 +248,14 @@
   Site.seg(document.getElementById('f-stage'), [['all', '全部'], ['not_prioritized', '未列入优先'], ['nominate', '进入深入研究'], ['tier0_excluded', '初筛排除']], 'all', v => { state.stage = v; drawCov(); });
   document.getElementById('f-q').addEventListener('input', e => { state.q = e.target.value; drawAll(); });
 
-  // 已排定的验证，按日期汇总
+  // 已排定的验证，按时间点汇总
   (function () {
-    const byDay = new Map();
-    D.schedule.forEach(s => { const k = String(s.due).slice(0, 10), o = byDay.get(k) || { n: 0, kinds: {}, blocked: 0, a: new Set() }; o.n++; o.kinds[s.kind] = (o.kinds[s.kind] || 0) + 1; if (s.state === 'blocked') o.blocked++; const co = byId.get(s.sid); if (co && co.bucket === 'A') o.a.add(co.name); byDay.set(k, o); });
-    As.forEach(c => { const k = String(c.nextCheck).slice(0, 10), o = byDay.get(k); if (o) o.a.add(c.name); });
+    const byTime = new Map();
+    D.schedule.forEach(s => { const k = at(s.due), o = byTime.get(k) || { n: 0, kinds: {}, blocked: 0, a: new Set() }; o.n++; o.kinds[s.kind] = (o.kinds[s.kind] || 0) + 1; if (s.state === 'blocked') o.blocked++; const co = byId.get(s.sid); if (co && co.bucket === 'A') o.a.add(co.name); byTime.set(k, o); });
+    As.forEach(c => { const o = byTime.get(at(c.nextCheck)); if (o) o.a.add(c.name); });
     add(document.getElementById('sch-table'),
-      el('thead', null, el('tr', null, [['计划复核日'], ['事项', 'n'], ['研究任务', 'n'], ['证伪检查', 'n'], ['催化观察', 'n'], ['其中等待证据', 'n'], ['涉及的 A 级公司']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
-      el('tbody', null, [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, o]) => el('tr', null,
+      el('thead', null, el('tr', null, [['复核时间（北京时间）'], ['事项', 'n'], ['研究任务', 'n'], ['证伪检查', 'n'], ['催化观察', 'n'], ['其中等待证据', 'n'], ['涉及的 A 级公司']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
+      el('tbody', null, [...byTime.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, o]) => el('tr', null,
         el('td', { style: 'font-family:var(--num);white-space:nowrap', text: k }), el('td', { class: 'n', text: o.n }),
         el('td', { class: 'n', text: o.kinds.research_task || '—' }), el('td', { class: 'n', text: o.kinds.falsifier || '—' }), el('td', { class: 'n', text: o.kinds.catalyst || '—' }),
         el('td', { class: 'n', text: o.blocked || '—' }), el('td', { text: [...o.a].join('、') || '—' })))));
@@ -300,7 +302,7 @@
   }
   function schedList(sid) {
     const list = (schedBy.get(sid) || []).slice().sort((a, b) => String(a.due).localeCompare(String(b.due)));
-    return block.sect('复核日程', list.length ? el('ul', null, list.map(s => el('li', { text: when(s.due) + '　' + (KIND[s.kind] || '复核') + (s.state === 'blocked' ? '，等待证据' : '') + (s.question ? '：' + s.question.replace(/。$/, '') : '') }))) : null);
+    return block.sect('复核日程（北京时间）', list.length ? el('ul', null, list.map(s => el('li', { text: at(s.due) + '　' + (KIND[s.kind] || '复核') + (s.state === 'blocked' ? '，等待证据' : '') + (s.question ? '：' + s.question.replace(/。$/, '') : '') }))) : null);
   }
   function openCompany(id) {
     const c = byId.get(id); if (!c) return;
