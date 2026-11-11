@@ -53,7 +53,7 @@
     const yA = v => A.bot - (v - lo) / (hi - lo) * (A.bot - A.top);
     ticks(lo, hi, 4).forEach(v => {
       plot.append(hair(PX0, yA(v), PX1, yA(v), v === 0 ? .36 : .13),
-        sv('text', { class: 'tn', x: PX0 - 16, y: yA(v) + 4, 'text-anchor': 'end', style: 'fill:var(--ink3)' }, (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'));
+        sv('text', { class: 'ta', x: PX0 - 16, y: yA(v) + 4, 'text-anchor': 'end' }, (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'));
     });
     plot.append(sv('text', { class: 't3', x: PX0, y: A.top - 22 }, '累计收益率'));
     const pts = (arr, y) => arr.map((v, i) => (v == null ? null : xOf(i).toFixed(1) + ' ' + y(v).toFixed(1))).filter(Boolean);
@@ -80,7 +80,7 @@
     const yB = v => B.bot - (v - lo2) / (hi2 - lo2) * (B.bot - B.top);
     ticks(lo2, hi2, 3).forEach(v => {
       plot.append(hair(PX0, yB(v), PX1, yB(v), v === 0 ? .36 : .13),
-        sv('text', { class: 'tn', x: PX0 - 16, y: yB(v) + 4, 'text-anchor': 'end', style: 'fill:var(--ink3)' }, (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'));
+        sv('text', { class: 'ta', x: PX0 - 16, y: yB(v) + 4, 'text-anchor': 'end' }, (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + '%'));
     });
     plot.append(sv('text', { class: 't3', x: PX0, y: B.top - 16 }, 'SPY 开盘到收盘涨跌幅'));
     const bw = Math.max(2, Math.min(22, (PX1 - PX0) / n * 0.56));

@@ -205,7 +205,7 @@
     const g = sv('g', { class: 'hot dim rise' });
     g.append(sv('path', { d: 'M' + p[0] + ' ' + (p[1] - s) + 'L' + (p[0] + s) + ' ' + p[1] + 'L' + p[0] + ' ' + (p[1] + s) + 'L' + (p[0] - s) + ' ' + p[1] + 'Z', fill: '#050505', stroke: '#cfb07a', 'stroke-width': 1.1 }),
       sv('circle', { cx: p[0], cy: p[1], r: 12, fill: 'transparent' }));
-    link(g, 'stocks.html#review', d0 + ' 复盘');
+    link(g, 'stocks.html', d0 + ' 复盘');
     hover(g, () => [el('b', { text: d0 + ' 复盘' }), kv('核对原判断', n + ' 项')]);
     stocks.append(g);
   });

@@ -196,7 +196,7 @@
     el('span', null, mini(sv('path', { d: 'M9.6 2.6l6.8 6.8m0 -6.8l-6.8 6.8', stroke: '#f1eadb', 'stroke-opacity': .6, 'stroke-width': 1.2 })), '假说被否定'));
 
   // ── 纸面 ──
-  const state = { market: 'all', q: '', grade: 'all', stage: 'all' };
+  const state = { market: 'all', q: '', grade: 'all' };
   const okMarket = x => state.market === 'all' || x.market === state.market;
   const okQ = (x, extra) => { const q = state.q.trim().toLowerCase(); return !q || [x.name, x.ticker, x.industry, indCN(x.industry || ''), extra].filter(Boolean).join(' ').toLowerCase().indexOf(q) >= 0; };
   const rowOpen = fn => ({ class: 'open', tabindex: '0', on: { click: fn, keydown: e => { if (e.key === 'Enter') fn(); } } });
@@ -232,20 +232,10 @@
       el('td', null, el('span', { class: 'clip', text: i.whyNow || '—' })), el('td', { class: 'n', text: fmt.md(i.nextReview) })),
   });
   const drawInd = () => indTable.set(D.industries.filter(i => okMarket(i) && okQ({ name: indCN(i.name), industry: i.name })).sort((a, b) => (b.companies || 0) - (a.companies || 0)));
-  const covTable = Site.pager(document.getElementById('cov-table'), {
-    size: 15, head: [['公司'], ['行业'], ['阶段'], ['说明']],
-    row: c => el('tr', rowOpen(() => (byId.has(c.id) ? openCompany(c.id) : openCoverage(c))),
-      el('td', { style: 'white-space:nowrap' }, c.name, el('small', { text: c.ticker })),
-      el('td', { style: 'white-space:nowrap' }, indCN(c.industry), el('small', { text: mktCN(c.market) })),
-      el('td', { style: 'white-space:nowrap', text: byId.has(c.id) ? '深入研究，' + (GRADE[byId.get(c.id).bucket] || '').split('，')[0] : STAGE[c.stage] || c.stage }),
-      el('td', null, el('span', { class: 'clip', text: c.reason || '—' }))),
-  });
-  const drawCov = () => covTable.set(cov.filter(c => okMarket(c) && okQ(c) && (state.stage === 'all' || c.stage === state.stage)));
 
-  function drawAll() { drawA(); drawC(); drawInd(); drawCov(); }
+  function drawAll() { drawA(); drawC(); drawInd(); }
   Site.seg(document.getElementById('f-market'), [['all', '全部'], ['CN', 'A 股'], ['US', '美股']], 'all', v => { state.market = v; drawAll(); });
   Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.C + G.Reject)], ['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]], 'all', v => { state.grade = v; drawC(); });
-  Site.seg(document.getElementById('f-stage'), [['all', '全部'], ['not_prioritized', '未列入优先'], ['nominate', '进入深入研究'], ['tier0_excluded', '初筛排除']], 'all', v => { state.stage = v; drawCov(); });
   document.getElementById('f-q').addEventListener('input', e => { state.q = e.target.value; drawAll(); });
 
   // 已排定的验证，按时间点汇总
@@ -259,33 +249,6 @@
         el('td', { style: 'font-family:var(--num);white-space:nowrap', text: k }), el('td', { class: 'n', text: o.n }),
         el('td', { class: 'n', text: o.kinds.research_task || '—' }), el('td', { class: 'n', text: o.kinds.falsifier || '—' }), el('td', { class: 'n', text: o.kinds.catalyst || '—' }),
         el('td', { class: 'n', text: o.blocked || '—' }), el('td', { text: [...o.a].join('、') || '—' })))));
-  })();
-
-  // 复盘
-  (function () {
-    const cand = D.outcomes.filter(o => o.scope === 'candidate'), ind = D.outcomes.filter(o => o.scope === 'industry');
-    const row = (label, list) => { const n = k => list.filter(o => o.logic === k).length; return el('tr', null, el('td', { text: label }), el('td', { class: 'n', text: list.length }), el('td', { class: 'n', text: n('confirmed') }), el('td', { class: 'n', text: n('weakened') }), el('td', { class: 'n', text: n('inconclusive') })); };
-    const wins = [...new Set(D.outcomes.map(o => o.window))].sort((a, b) => a - b);
-    add(document.getElementById('rev-table'),
-      el('thead', null, el('tr', null, [['对象与窗口'], ['已评价', 'n'], ['逻辑得到印证', 'n'], ['逻辑被削弱', 'n'], ['尚无定论', 'n']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
-      el('tbody', null, wins.map(w => row('公司判断，' + w + ' 个交易日', cand.filter(o => o.window === w))), wins.map(w => row('行业判断，' + w + ' 个交易日', ind.filter(o => o.window === w)))));
-    add(document.getElementById('rev-list'),
-      el('thead', null, el('tr', null, [['复核日'], ['公司'], ['结论'], ['说明']].map(h => el('th', { text: h })))),
-      el('tbody', null, D.reviews.map(r => { const co = byId.get(r.sid) || covById.get(r.sid); return el('tr', null,
-        el('td', { style: 'font-family:var(--num);white-space:nowrap', text: r.at }), el('td', { style: 'white-space:nowrap', text: co ? co.name : r.sid }),
-        el('td', { style: 'white-space:nowrap', text: LOGIC[r.logic] || r.logic }), el('td', { text: r.note })); })));
-  })();
-
-  // 覆盖范围
-  (function () {
-    const cols = [['universe', '范围内'], ['tier0_passed', '初筛通过'], ['assessed', '完成初步评估'], ['nominated', '进入深入研究'], ['A_companies', 'A 级'], ['C_companies', 'C 级']];
-    const scopes = D.scopes.slice().sort((a, b) => b.funnel.universe - a.funnel.universe);
-    const names = s => mktCN(s.market) + '　' + String(s.universe || '').replace('∪', ' 与 ');
-    add(document.getElementById('funnel'),
-      el('thead', null, el('tr', null, el('th', { text: '研究范围' }), cols.map(c => el('th', { class: 'n', text: c[1] })))),
-      el('tbody', null, scopes.map(s => el('tr', null, el('td', null, names(s), el('small', { text: '行情截至 ' + (s.eod || '—') })), cols.map(c => el('td', { class: 'n', text: s.funnel[c[0]] != null ? fmt.num(s.funnel[c[0]]) : '—' })))),
-        el('tr', null, el('td', { style: 'font-weight:600', text: '合计' }), cols.map(c => el('td', { class: 'n', style: 'font-weight:600', text: fmt.num(scopes.reduce((t, s) => t + (s.funnel[c[0]] || 0), 0)) })))));
-    document.getElementById('limits').append(el('p', { class: 'fine', text: '研究范围　' + scopeText + '。范围以外的公司未作评价。' }));
   })();
 
   // ── 详情 ──
