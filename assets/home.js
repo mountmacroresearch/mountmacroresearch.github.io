@@ -209,8 +209,10 @@
     hover(g, () => [el('b', { text: d0 + ' 复盘' }), kv('核对原判断', n + ' 项')]);
     stocks.append(g);
   });
+  let runEnd = null;   // 本轮研究两行标注的右端
   if (inWin(RD.asOf)) (function () {
     const d0 = RD.asOf.slice(0, 10), p = pt(R.stock, th(d0));
+    runEnd = p[0] - 14;
     const g = sv('g', { class: 'hot rise' });
     g.append(sv('circle', { cx: p[0], cy: p[1], r: 15, fill: 'url(#node)' }), sv('circle', { cx: p[0], cy: p[1], r: 2.8, fill: '#fff8e6' }),
       sv('text', { class: 't2', x: p[0] - 14, y: p[1] + 30, 'text-anchor': 'end' }, sv('tspan', { class: 'tn' }, fmt.md(d0) + ' '), '本轮研究'),
@@ -241,10 +243,16 @@
   });
   tags.forEach(t => {
     const a = (t.a0 + t.a1) / 2, b0 = pt(R.stock - t.r - 18, a), b1 = pt(R.stock - t.r - 35, a);
-    t.g.append(sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, t.d.join('、')),
-      sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, t.n.join('、') + ' 项'));
+    t.els = [sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, t.d.join('、')),
+      sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, t.n.join('、') + ' 项')];
+    t.g.append(...t.els);
   });
   field.append(stocks);
+  // 本轮研究临近下一批复核时，复核标注整体右移，与本轮研究的标注隔开
+  if (runEnd != null) tags.forEach(t => {
+    const dx = runEnd + 20 - Math.min(...t.els.map(e => e.getBBox().x));
+    if (dx > 0) t.els.forEach(e => e.setAttribute('x', +e.getAttribute('x') + dx));
+  });
 
   // ── 封面与图例 ──
   document.getElementById('asof').append(
