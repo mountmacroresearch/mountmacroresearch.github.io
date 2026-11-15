@@ -305,7 +305,7 @@
         el('td', null,
           el('p', { class: 'judg' }, fmt.num(RD.summary.universe) + ' 只股票中 ' + RD.summary.companies + ' 家进入深入研究，', el('b', { text: RD.summary.grades.A + ' 家评为 A 级' }), '。'),
           el('p', { class: 'judg', text: [['A 股', aNames('CN')], ['美股', aNames('US')]].filter(x => x[1]).map(x => x[0] + '：' + x[1]).join('。') + '。' })),
-        el('td', null, el('div', { class: 'figs' }, fig(String(RD.summary.grades.A || 0), 'A 级'), fig(String(RD.summary.grades.C || 0), 'C 级'), fig(String(RD.summary.grades.Reject || 0), '假说被否定'))),
+        el('td', null, el('div', { class: 'figs' }, fig(String(RD.summary.grades.A || 0), 'A 级'), RD.summary.grades.B ? fig(String(RD.summary.grades.B), 'B 级') : null, fig(String(RD.summary.grades.C || 0), 'C 级'), fig(String(RD.summary.grades.Reject || 0), '假说被否定'))),
         el('td', null, el('p', { class: 'fine', text: (nextChecks ? nextChecks + '。' : '') + '研究截止 ' + RD.displayTime })),
         el('td', null, enter('stocks.html', '进入个股')))));
 

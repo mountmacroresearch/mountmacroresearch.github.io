@@ -11,7 +11,7 @@
   const GICS = { 'Information Technology': '信息技术', Financials: '金融', 'Health Care': '医疗保健', Energy: '能源', 'Consumer Discretionary': '可选消费', Utilities: '公用事业', Industrials: '工业', 'Communication Services': '通信服务', 'Consumer Staples': '必需消费', Materials: '原材料', 'Real Estate': '房地产' };
   const indCN = n => GICS[n] || n;
   const mktCN = m => (m === 'CN' ? 'A 股' : '美股');
-  const GRADE = { A: 'A 级', B: 'B 级，条件观察', C: 'C 级，当前不推荐', Reject: '原假说被否定', 'Data Hold': '证据不足，暂缓', 'Research Pending': '研究未完成' };
+  const GRADE = { A: 'A 级', B: 'B 级，重点跟踪', C: 'C 级，当前不推荐', Reject: '原假说被否定', 'Data Hold': '证据不足，暂缓', 'Research Pending': '研究未完成' };
   const STAGE = { not_prioritized: '初步评估后未列入优先', nominate: '进入深入研究', tier0_excluded: '初筛排除' };
   const LOGIC = { confirmed: '得到印证', weakened: '被削弱', inconclusive: '尚无定论', refuted: '被否定' };
   const KIND = { research_task: '研究任务', falsifier: '证伪检查', catalyst: '催化观察', evaluation: '复盘评价' };
@@ -94,7 +94,9 @@
       if (co.bucket === 'Reject') deepDots.append(sv('path', { d: 'M' + (pr[0] - 3.4) + ' ' + (pr[1] - 3.4) + 'l6.8 6.8m0 -6.8l-6.8 6.8', stroke: '#f1eadb', 'stroke-opacity': .6, 'stroke-width': 1.2 }));
       else deepDots.append(sv('circle', co.bucket === 'A'
         ? { cx: pr[0], cy: pr[1], r: 3.6, fill: '#ecd092' }
-        : { cx: pr[0], cy: pr[1], r: 3.1, fill: '#050505', stroke: '#f1eadb', 'stroke-opacity': .7, 'stroke-width': 1.1 }));
+        : co.bucket === 'B'   // B 级：金色空心圈
+          ? { cx: pr[0], cy: pr[1], r: 3.1, fill: '#050505', stroke: '#ecd092', 'stroke-width': 1.3 }
+          : { cx: pr[0], cy: pr[1], r: 3.1, fill: '#050505', stroke: '#f1eadb', 'stroke-opacity': .7, 'stroke-width': 1.1 }));
       pts.push({ x: pr[0], y: pr[1], c: c, co: co, band: 1 });
       if (co.bucket === 'A') { const pa = P(RA, deg); links.append(sv('line', { x1: pr[0], y1: pr[1], x2: pa[0], y2: pa[1], stroke: '#cfb07a', 'stroke-opacity': .5 })); }
     }
@@ -174,9 +176,10 @@
 
   // ── 封面、名单、图例 ──
   const stageEl = document.getElementById('stage');
-  const G = { A: S.grades.A || 0, C: S.grades.C || 0, Reject: S.grades.Reject || 0 };
+  const G = { A: S.grades.A || 0, B: S.grades.B || 0, C: S.grades.C || 0, Reject: S.grades.Reject || 0 };
+  const rest = [G.B ? G.B + ' 家 B 级重点跟踪' : '', G.C ? G.C + ' 家当前不推荐' : '', G.Reject ? G.Reject + ' 家原假说被否定' : ''].filter(Boolean);
   document.getElementById('line').textContent = fmt.num(S.universe) + ' 只股票中 ' + S.companies + ' 家进入深入研究，' + G.A + ' 家评为 A 级：A 股 ' + As.filter(c => c.market === 'CN').length + ' 家，美股 ' + As.filter(c => c.market === 'US').length + ' 家。' +
-    (G.C ? '其余 ' + G.C + ' 家当前不推荐' + (G.Reject ? '，' + G.Reject + ' 家原假说被否定' : '') + '。' : '');
+    (rest.length ? '其余 ' + rest.join('，') + '。' : '');
   add(document.getElementById('meta'), el('span', null, '研究截止 ', el('b', { text: D.displayTime })), el('a', { class: 'link', href: '#grade-a', text: 'A 级名单' }), el('span', { text: scopeText }));
   const idx = document.getElementById('index');
   idx.append(el('h2', { text: 'A 级 ' + As.length + ' 家　下次复核' }));
@@ -192,6 +195,7 @@
     el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 1.6, fill: '#f1eadb', opacity: .5 })), '覆盖'),
     el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 1.9, fill: '#ecd092' })), '深入研究'),
     el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 6, fill: 'url(#node)' }), sv('circle', { cx: 13, cy: 6, r: 2, fill: '#fff8e6' })), 'A 级'),
+    G.B ? el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 3.1, fill: 'none', stroke: '#ecd092', 'stroke-width': 1.3 })), 'B 级') : null,
     el('span', null, mini(sv('circle', { cx: 13, cy: 6, r: 3.1, fill: 'none', stroke: '#f1eadb', 'stroke-opacity': .7, 'stroke-width': 1.1 })), '不推荐'),
     el('span', null, mini(sv('path', { d: 'M9.6 2.6l6.8 6.8m0 -6.8l-6.8 6.8', stroke: '#f1eadb', 'stroke-opacity': .6, 'stroke-width': 1.2 })), '假说被否定'));
 
@@ -218,7 +222,7 @@
     row: c => el('tr', rowOpen(() => openCompany(c.id)),
       el('td', { style: 'white-space:nowrap' }, c.name, el('small', { text: c.ticker })),
       el('td', { style: 'white-space:nowrap' }, indCN(c.industry), el('small', { text: mktCN(c.market) })),
-      el('td', { style: 'white-space:nowrap' }, c.bucket === 'Reject' ? '原假说被否定' : 'C 级'),
+      el('td', { style: 'white-space:nowrap' }, c.bucket === 'Reject' ? '原假说被否定' : c.bucket === 'B' ? 'B 级' : 'C 级'),
       el('td', null, el('span', { class: 'clip', text: c.whyNow || c.firstRejection || '—' })),
       el('td', { class: 'n', text: fmt.md(c.nextCheck) })),
   });
@@ -235,7 +239,7 @@
 
   function drawAll() { drawA(); drawC(); drawInd(); }
   Site.seg(document.getElementById('f-market'), [['all', '全部'], ['CN', 'A 股'], ['US', '美股']], 'all', v => { state.market = v; drawAll(); });
-  Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.C + G.Reject)], ['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]], 'all', v => { state.grade = v; drawC(); });
+  Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.B + G.C + G.Reject)]].concat(G.B ? [['B', 'B 级 ' + G.B]] : [], [['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]]), 'all', v => { state.grade = v; drawC(); });
   document.getElementById('f-q').addEventListener('input', e => { state.q = e.target.value; drawAll(); });
 
   // 已排定的验证，按时间点汇总
@@ -277,7 +281,7 @@
       facts: [['市场与行业', mktCN(c.market) + '　' + indCN(c.industry)], ['研究时价格，' + fmt.md(c.price.at), price(c)], horizonCN(c.horizon) ? ['预期期限', horizonCN(c.horizon)] : null,
         ['下次复核', when(c.nextCheck)], c.expires ? ['假设到期', when(c.expires)] : null],
       tabs: [
-        { label: '判断', build: () => [block.sect('核心假设', block.p(thesis(c))),
+        { label: '判断', build: () => [block.sect('重点跟踪依据', block.p(c.watch)), block.sect('核心假设', block.p(thesis(c))),
           block.sect('传导', c.chain && c.chain.length > 1 ? el('ol', { class: 'chain' }, c.chain.slice(1).map(x => el('li', null, x.label, x.why ? el('div', { class: 'quiet', text: x.why }) : null))) : null),
           block.sect('为什么是现在', block.p(c.whyNow)),
           block.sect('与市场看法的差别', block.p(c.expect.wedge)), block.sect('重新考虑的条件', block.p(c.investableIf))].flat() },
