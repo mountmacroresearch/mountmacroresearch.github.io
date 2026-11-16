@@ -17,7 +17,7 @@
   const KIND = { research_task: '研究任务', falsifier: '证伪检查', catalyst: '催化观察', evaluation: '复盘评价' };
   const GATE = { data_eligibility: '数据资格', causality: '因果链', exposure_expectations: '业务暴露与预期', valuation_falsification: '估值与证伪' };
   const PASS = { PASS: '通过', FAIL: '未通过', CONDITIONAL: '有条件通过', PENDING: '待定', DEPRIORITIZED: '未列入优先' };
-  const BUCKET = { Conditional: '有条件', Avoid: '回避', Attractive: '看好' };
+  const BUCKET = { Conditional: '有条件', Avoid: '回避', Attractive: '看好', Priority: '看好', Insufficient: '证据不足' };
   const PRICED = { fully_priced: '已充分反映', partially_priced: '部分反映', unknown: '无法判断' };
   const VALUE = { acceptable: '在可接受范围内', outside: '不在可接受范围内', unknown: '无法判断' };
   const LEVEL = { high: '高', medium: '中', low: '低' };
@@ -227,12 +227,14 @@
       el('td', { class: 'n', text: fmt.md(c.nextCheck) })),
   });
   const drawC = () => cTable.set(companies.filter(c => c.bucket !== 'A' && okMarket(c) && okQ(c) && (state.grade === 'all' || c.bucket === state.grade)));
+  // 行业的“把握”只在数据里有这一项时显示
+  const hasConf = D.industries.some(i => i.confidence != null);
   const indTable = Site.pager(document.getElementById('ind-table'), {
-    size: 12, head: [['行业'], ['判断'], ['把握', 'n'], ['深入研究', 'n'], ['现在的看法'], ['下次复核', 'n']],
+    size: 12, head: [['行业'], ['判断'], hasConf ? ['把握', 'n'] : null, ['深入研究', 'n'], ['现在的看法'], ['下次复核', 'n']].filter(Boolean),
     row: i => el('tr', rowOpen(() => openIndustry(i)),
       el('td', { style: 'white-space:nowrap' }, indCN(i.name), el('small', { text: mktCN(i.market) })),
       el('td', { style: 'white-space:nowrap', text: BUCKET[i.bucket] || i.bucket }),
-      el('td', { class: 'n', text: i.confidence != null ? i.confidence.toFixed(1) : '—' }), el('td', { class: 'n', text: i.companies != null ? i.companies + ' 家' : '—' }),
+      hasConf ? el('td', { class: 'n', text: i.confidence != null ? i.confidence.toFixed(1) : '—' }) : null, el('td', { class: 'n', text: i.companies != null ? i.companies + ' 家' : '—' }),
       el('td', null, el('span', { class: 'clip', text: i.whyNow || '—' })), el('td', { class: 'n', text: fmt.md(i.nextReview) })),
   });
   const drawInd = () => indTable.set(D.industries.filter(i => okMarket(i) && okQ({ name: indCN(i.name), industry: i.name })).sort((a, b) => (b.companies || 0) - (a.companies || 0)));
@@ -267,6 +269,16 @@
         el('td', { class: 'n' }, signed(o.abs, fmt.pct(o.abs * 100))), el('td', { class: 'n', text: fmt.pct(o.bench * 100) + ' ' + String(o.benchmark || '').replace(/^[A-Z]{2}:/, '') }), el('td', { class: 'n' }, signed(o.rel, fmt.pct(o.rel * 100))),
         el('td', { style: 'white-space:nowrap', text: LOGIC[o.logic] || o.logic }))))));
   }
+  // 每段评级期间的股价与基准涨跌
+  function ratingTable(list) {
+    if (!list || !list.length) return null;
+    return el('div', { class: 'tbl-wrap' }, el('table', { class: 'tbl' },
+      el('thead', null, el('tr', null, [['评级'], ['区间'], ['交易日', 'n'], ['股价', 'n'], ['基准', 'n'], ['相对', 'n']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
+      el('tbody', null, list.slice().sort(byEnd).map(o => el('tr', null,
+        el('td', { style: 'white-space:nowrap', text: String(GRADE[o.grade] || o.grade).split('，')[0] }), el('td', { style: 'font-family:var(--num);white-space:nowrap', text: fmt.md(o.start) + ' 至 ' + fmt.md(o.end) }),
+        el('td', { class: 'n', text: String(o.window) }),
+        el('td', { class: 'n' }, signed(o.abs, fmt.pct(o.abs * 100))), el('td', { class: 'n', text: fmt.pct(o.bench * 100) + ' ' + String(o.benchmark || '').replace(/^[A-Z]{2}:/, '') }), el('td', { class: 'n' }, signed(o.rel, fmt.pct(o.rel * 100))))))));
+  }
   function schedList(sid) {
     const list = (schedBy.get(sid) || []).slice().sort((a, b) => String(a.due).localeCompare(String(b.due)));
     return block.sect('复核日程（北京时间）', list.length ? el('ul', null, list.map(s => el('li', { text: at(s.due) + '　' + (KIND[s.kind] || '复核') + (s.state === 'blocked' ? '，等待证据' : '') + (s.question ? '：' + s.question.replace(/。$/, '') : '') }))) : null);
@@ -296,7 +308,7 @@
         { label: '验证', count: c.falsifiers.length + oc.length, build: () => [
           block.sect('证伪条件', c.falsifiers.length ? el('ul', null, c.falsifiers.map(f => el('li', null, f.text, f.check ? el('div', { class: 'quiet', text: '检查时间 ' + when(f.check) }) : null))) : block.p(c.firstRejection)),
           block.sect('反方观点', block.p(c.counter)), block.sect('风险', block.list(c.risks)),
-          schedList(id), block.sect('复盘', outcomeTable(oc))].flat() },
+          schedList(id), block.sect('评级期间表现', ratingTable(oc.filter(o => o.grade))), block.sect('复盘', outcomeTable(oc.filter(o => !o.grade)))].flat() },
       ],
     });
   }
@@ -304,7 +316,7 @@
     const tabs = [];
     if (c.reason) tabs.push({ label: '判断', build: () => block.sect('未进入深入研究的原因', block.p(c.reason)) });
     if (c.basis) tabs.push({ label: '口径', build: () => block.sect('初筛口径', block.p(c.basis)) });
-    tabs.push({ label: '验证', build: () => [block.sect('下次复核', block.p(c.revisit ? '随所在行业在 ' + when(c.revisit) + ' 复核。' : '暂未排定。')), schedList(c.id)].flat() });
+    tabs.push({ label: '验证', build: () => [block.sect('下次复核', block.p(c.revisit ? (c.own ? '计划在 ' : '随所在行业在 ') + when(c.revisit) + ' 复核。' : '暂未排定。')), schedList(c.id)].flat() });
     Site.untip();
     Site.dossier({
       hash: c.id, kicker: '个股机会', title: c.name + '　' + c.ticker, line: STAGE[c.stage] || c.stage,
@@ -319,7 +331,7 @@
     if (i.firstRejection || i.minority || i.nextKpi) tabs.push({ label: '验证', build: () => [block.sect('证伪条件', block.p(i.firstRejection)), block.sect('不同的看法', block.p(i.minority)), block.sect('下一个确认指标', block.p(i.nextKpi))].flat() });
     Site.dossier({
       kicker: '个股机会　行业', title: indCN(i.name) + '　' + mktCN(i.market), line: i.whyNow,
-      facts: [['判断', BUCKET[i.bucket] || i.bucket], ['把握', i.confidence != null ? i.confidence.toFixed(1) : '—'], ['深入研究', (i.companies || 0) + ' 家'], ['下次复核', when(i.nextReview)]], tabs: tabs,
+      facts: [['判断', BUCKET[i.bucket] || i.bucket], i.confidence != null ? ['把握', i.confidence.toFixed(1)] : null, ['深入研究', (i.companies || 0) + ' 家'], ['下次复核', when(i.nextReview)]], tabs: tabs,
     });
   }
 
