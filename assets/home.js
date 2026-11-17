@@ -221,7 +221,7 @@
   })();
   const aByDate = {};
   RD.A.forEach(c => { const k = String(c.nextCheck).slice(0, 10); (aByDate[k] = aByDate[k] || []).push(c); });
-  const tags = [];   // 大圈的标注；相邻几天挨得太近时合用一个，日期和事项数按先后列出
+  const tags = [];   // 大圈的标注；相邻几天挨得太近时合用一个，写起止日期和其间排定的事项合计
   RD.dueByDate.forEach(([d0, n]) => {
     if (day(d0) < day(today) || !inWin(d0)) return;
     const a = th(d0), p = pt(R.stock, a), names = aByDate[d0] || [], big = n >= 8 || names.length > 0;
@@ -232,8 +232,8 @@
     names.forEach((c, i) => { const q = pt(R.stock + r + 8 + i * 7, a); g.append(sv('circle', { cx: q[0], cy: q[1], r: 2.5, fill: '#ecd092' })); });
     if (big) {
       const prev = tags[tags.length - 1];
-      if (prev && R.stock * (a - prev.a1) < 44) { prev.a1 = a; prev.r = Math.max(prev.r, r); prev.d.push(fmt.md(d0)); prev.n.push(n); }
-      else tags.push({ g: g, a0: a, a1: a, r: r, d: [fmt.md(d0)], n: [n] });
+      if (prev && R.stock * (a - prev.a1) < 44) { prev.a1 = a; prev.r = Math.max(prev.r, r); prev.d1 = d0; }
+      else tags.push({ g: g, a0: a, a1: a, r: r, d0: d0, d1: d0 });
     }
     g.append(sv('circle', { cx: p[0], cy: p[1], r: Math.max(r, 12), fill: 'transparent' }));
     link(g, 'stocks.html#schedule', d0 + ' 复核');
@@ -243,8 +243,9 @@
   });
   tags.forEach(t => {
     const a = (t.a0 + t.a1) / 2, b0 = pt(R.stock - t.r - 18, a), b1 = pt(R.stock - t.r - 35, a);
-    t.els = [sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, t.d.join('、')),
-      sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, t.n.join('、') + ' 项')];
+    const n = RD.dueByDate.reduce((s, [d, k]) => s + (d >= t.d0 && d <= t.d1 ? k : 0), 0);
+    t.els = [sv('text', { class: 'tn', x: b0[0], y: b0[1], 'text-anchor': 'middle' }, t.d0 === t.d1 ? fmt.md(t.d0) : fmt.md(t.d0) + ' 至 ' + fmt.md(t.d1)),
+      sv('text', { class: 't3', x: b1[0], y: b1[1], 'text-anchor': 'middle' }, n + ' 项')];
     t.g.append(...t.els);
   });
   field.append(stocks);
