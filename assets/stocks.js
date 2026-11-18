@@ -180,8 +180,8 @@
 
   // ── 封面、名单、图例 ──
   const stageEl = document.getElementById('stage');
-  const G = { A: S.grades.A || 0, B: S.grades.B || 0, C: S.grades.C || 0, Reject: S.grades.Reject || 0 };
-  const rest = [G.B ? G.B + ' 家 B 级重点跟踪' : '', G.C ? G.C + ' 家当前不推荐' : '', G.Reject ? G.Reject + ' 家原假说被否定' : ''].filter(Boolean);
+  const G = { A: S.grades.A || 0, B: S.grades.B || 0, C: S.grades.C || 0, Reject: S.grades.Reject || 0, pending: S.grades['Research Pending'] || 0, hold: S.grades['Data Hold'] || 0 };
+  const rest = [G.B ? G.B + ' 家 B 级重点跟踪' : '', G.C ? G.C + ' 家当前不推荐' : '', G.pending ? G.pending + ' 家研究未完成' : '', G.hold ? G.hold + ' 家证据不足暂缓' : '', G.Reject ? G.Reject + ' 家原假说被否定' : ''].filter(Boolean);
   document.getElementById('line').textContent = fmt.num(S.universe) + ' 只股票中 ' + S.companies + ' 家进入深入研究，' + G.A + ' 家评为 A 级：A 股 ' + As.filter(c => c.market === 'CN').length + ' 家，美股 ' + As.filter(c => c.market === 'US').length + ' 家。' +
     (rest.length ? '其余 ' + rest.join('，') + '。' : '');
   add(document.getElementById('meta'), el('span', null, '研究截止 ', el('b', { text: D.displayTime })), el('a', { class: 'link', href: '#grade-a', text: 'A 级名单' }), el('span', { text: scopeText }));
@@ -226,7 +226,7 @@
     row: c => el('tr', rowOpen(() => openCompany(c.id)),
       el('td', { style: 'white-space:nowrap' }, c.name, el('small', { text: c.ticker })),
       el('td', { style: 'white-space:nowrap' }, indCN(c.industry), el('small', { text: mktCN(c.market) })),
-      el('td', { style: 'white-space:nowrap' }, c.bucket === 'Reject' ? '原假说被否定' : c.bucket === 'B' ? 'B 级' : 'C 级'),
+      el('td', { style: 'white-space:nowrap' }, c.bucket === 'B' ? 'B 级' : c.bucket === 'C' ? 'C 级' : GRADE[c.bucket] || c.bucket),
       el('td', null, el('span', { class: 'clip', text: c.whyNow || c.firstRejection || '—' })),
       el('td', { class: 'n', text: fmt.md(c.nextCheck) })),
   });
@@ -245,7 +245,7 @@
 
   function drawAll() { drawA(); drawC(); drawInd(); }
   Site.seg(document.getElementById('f-market'), [['all', '全部'], ['CN', 'A 股'], ['US', '美股']], 'all', v => { state.market = v; drawAll(); });
-  Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.B + G.C + G.Reject)]].concat(G.B ? [['B', 'B 级 ' + G.B]] : [], [['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]]), 'all', v => { state.grade = v; drawC(); });
+  Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.B + G.C + G.Reject + G.pending + G.hold)]].concat(G.B ? [['B', 'B 级 ' + G.B]] : [], [['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]]), 'all', v => { state.grade = v; drawC(); });
   document.getElementById('f-q').addEventListener('input', e => { state.q = e.target.value; drawAll(); });
 
   // 已排定的验证，按时间点汇总
