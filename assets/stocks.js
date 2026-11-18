@@ -108,6 +108,7 @@
   const aNodes = As.map(c => ({ c: c, p: P(RA, c.deg) })).sort((a, b) => a.c.deg - b.c.deg);
   // 中间一段相邻的点靠得近时，名字在三层之间轮换（两层时第一个和第三个会叠在一起）
   let prevDeg = -1e9, prevTier = 0;
+  const aGroups = [];
   aNodes.forEach(n => {
     const c = n.c, p = n.p, deg = c.deg, label = c.market === 'US' ? c.ticker : c.name;
     const side = deg < -22 ? 'end' : deg > 22 ? 'start' : 'middle';
@@ -123,8 +124,10 @@
     g.addEventListener('click', () => openCompany(c.id));
     g.addEventListener('keydown', e => { if (e.key === 'Enter') openCompany(c.id); });
     pts.push({ x: p[0], y: p[1], c: covById.get(c.id), co: c, band: 2 });
-    aLayer.append(g);
+    aGroups.push({ g: g, tier: tier });
   });
+  // 外层的先画：它的引线会经过里层的名字，里层名字后画，字的描边把线盖住
+  aGroups.sort((a, b) => b.tier - a.tier).forEach(x => aLayer.append(x.g));
   field.append(aLayer);
 
   // 三道弧左端的名字、两侧的市场
