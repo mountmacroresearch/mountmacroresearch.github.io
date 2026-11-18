@@ -106,16 +106,17 @@
   // A 级：亮点加名字，沿射线向外放，两侧的字朝外对齐
   const aLayer = sv('g');
   const aNodes = As.map(c => ({ c: c, p: P(RA, c.deg) })).sort((a, b) => a.c.deg - b.c.deg);
-  let prevDeg = -1e9, prevFar = false;
+  // 中间一段相邻的点靠得近时，名字在三层之间轮换（两层时第一个和第三个会叠在一起）
+  let prevDeg = -1e9, prevTier = 0;
   aNodes.forEach(n => {
     const c = n.c, p = n.p, deg = c.deg, label = c.market === 'US' ? c.ticker : c.name;
     const side = deg < -22 ? 'end' : deg > 22 ? 'start' : 'middle';
-    const far = side === 'middle' && deg - prevDeg < 7 && !prevFar;
-    prevDeg = deg; prevFar = far;
-    const q = P(RA + (side === 'middle' ? (far ? 74 : 36) : 22), deg);
+    const tier = side === 'middle' && deg - prevDeg < 7 ? (prevTier + 1) % 3 : 0;
+    prevDeg = deg; prevTier = tier;
+    const q = P(RA + (side === 'middle' ? 36 + 38 * tier : 22), deg);
     const tx = q[0] + (side === 'end' ? -4 : side === 'start' ? 4 : 0), ty = q[1] + (side === 'middle' ? -10 : 0);
     const g = sv('g', { class: 'hot dim rise', 'data-id': c.id, tabindex: '0', role: 'link', 'aria-label': c.name + '，A 级' });
-    if (far) { const l0 = P(RA + 14, deg), l1 = P(RA + 52, deg); g.append(sv('line', { x1: l0[0], y1: l0[1], x2: l1[0], y2: l1[1], stroke: '#cfb07a', 'stroke-opacity': .5 })); }
+    if (tier) { const l0 = P(RA + 14, deg), l1 = P(RA + 14 + 38 * tier, deg); g.append(sv('line', { x1: l0[0], y1: l0[1], x2: l1[0], y2: l1[1], stroke: '#cfb07a', 'stroke-opacity': .5 })); }
     g.append(sv('circle', { cx: p[0], cy: p[1], r: 17, fill: 'url(#node)' }), sv('circle', { cx: p[0], cy: p[1], r: 3, fill: '#fff8e6' }),
       sv('text', { class: 't', x: tx, y: ty, 'text-anchor': side }, label),
       sv('text', { class: 't3', x: tx, y: ty + 17, 'text-anchor': side }, indCN(c.industry)));
