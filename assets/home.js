@@ -210,8 +210,9 @@
     stocks.append(g);
   });
   let runEnd = null;   // 本轮研究两行标注的右端
-  if (inWin(RD.asOf)) (function () {
-    const d0 = RD.asOf.slice(0, 10), p = pt(R.stock, th(d0));
+  const runDay = String(RD.displayTime || RD.asOf).slice(0, 10);   // 研究截止的日期按北京时间，与个股页写的“研究截止”一致
+  if (inWin(runDay)) (function () {
+    const d0 = runDay, p = pt(R.stock, th(d0));
     runEnd = p[0] - 14;
     const g = sv('g', { class: 'hot rise' });
     g.append(sv('circle', { cx: p[0], cy: p[1], r: 15, fill: 'url(#node)' }), sv('circle', { cx: p[0], cy: p[1], r: 2.8, fill: '#fff8e6' }),
@@ -257,7 +258,7 @@
 
   // ── 封面与图例 ──
   document.getElementById('asof').append(
-    '数据截至', ...[['经济', H.macro.map(m => m.date).sort().pop()], ['专题', latestReport.date], ['指数', S.last], ['个股', RD.asOf.slice(0, 10)]]
+    '数据截至', ...[['经济', H.macro.map(m => m.date).sort().pop()], ['专题', latestReport.date], ['指数', S.last], ['个股', runDay]]
       .map(([k, d]) => el('span', null, k + ' ', el('b', { text: fmt.md(d) }))));
   const key = (shape, text) => el('span', null, shape, text);
   const mini = (...kids) => sv('svg', { viewBox: '0 0 26 12', 'aria-hidden': 'true' }, ...kids);
