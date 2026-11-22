@@ -2,7 +2,7 @@
    盈亏由 lib/engine.js 计算。 */
 (function () {
   const { el, sv, fmt, signed, kv, block } = Site;
-  const H = window.MMR_HUB, ALL = window.MMR_SPX.rows;
+  const ALL = window.MMR_SPX.rows;
   Site.nav('forecast.html');
 
   const field = document.getElementById('field');
@@ -19,7 +19,6 @@
   // 没有正常成交的日子给一个说明，正常成交的不必说
   const NOTE = { '研究记录，不计交易': '未计入统计', '待结算': '待结算', '框架空仓': '当日不交易', '无交易方向': '当日不交易', '缺少行情，未计收益': '行情待补' };
   const noteOf = d => NOTE[d.reason] || '';
-  const utc = t => (t ? t.replace('T', ' ').slice(0, 16) + ' UTC' : null);
 
   function compute() {
     rows = state.range === 'all' ? ALL : ALL.slice(-Number(state.range));
@@ -109,7 +108,7 @@
     let e = evt;
     if (!e) { const p = field.createSVGPoint(); p.x = x; p.y = A.top + 40; const q = p.matrixTransform(field.getScreenCTM()); e = { clientX: q.x, clientY: q.y, type: 'pointermove' }; }
     Site.tip(e, [el('b', { text: d.date }),
-      kv('盘前预测', dirCN(d.direction) + '，置信度 ' + (d.confidence != null ? d.confidence : '—')),
+      kv('预测', dirCN(d.direction) + '，置信度 ' + (d.confidence != null ? d.confidence : '—')),
       kv('SPY 开盘到收盘', fmt.pct(d.spyReturn)), kv('结果', hitCN(d)),
       kv('当日模拟净收益', d.net == null || !d.traded ? '—' : fmt.usd(d.net)), kv('累计收益率', fmt.pct(d.returnPct)),
       kv('标普500 同期', fmt.pct(d.benchmark)), noteOf(d) ? el('i', { text: noteOf(d) }) : null].filter(Boolean));
@@ -144,7 +143,7 @@
 
   // 封面
   const L = ALL[ALL.length - 1];
-  document.getElementById('line').textContent = fmt.cn(L.date) + '盘前预测' + dirCN(L.direction) + '，置信度 ' + L.confidence + ' / 10。' +
+  document.getElementById('line').textContent = fmt.cn(L.date) + '预测' + dirCN(L.direction) + '，置信度 ' + L.confidence + ' / 10。' +
     (L.dominant ? L.dominant.replace(/。$/, '') + '。' : '') + (L.official && L.hit != null ? '收盘 ' + fmt.pct(L.spyReturn) + '，' + hitCN(L) + '。' : '');
   const segStage = el('span', { class: 'seg-d' });
   document.getElementById('meta').append(el('span', null, '数据截至 ', el('b', { text: fmt.md(L.date) })), segStage,
@@ -168,7 +167,7 @@
   const openRow = d => ({ class: 'open', tabindex: '0', on: { click: () => openDay(d.date), keydown: e => { if (e.key === 'Enter') openDay(d.date); } } });
   const ledger = Site.pager(document.getElementById('ledger-table'), {
     size: 20, empty: '没有符合条件的交易日。',
-    head: [['交易日'], ['盘前预测'], ['置信度', 'n'], ['主导因素'], ['SPY 开盘到收盘', 'n'], ['结果'], ['当日模拟净收益', 'n'], ['累计净收益', 'n']],
+    head: [['交易日'], ['预测'], ['置信度', 'n'], ['主导因素'], ['SPY 开盘到收盘', 'n'], ['结果'], ['当日模拟净收益', 'n'], ['累计净收益', 'n']],
     row: d => el('tr', openRow(d),
       el('td', { style: 'font-family:var(--num);white-space:nowrap', text: d.date }),
       el('td', null, el('span', { class: d.direction === 'up' ? 'up' : 'dn', text: dirCN(d.direction) })),
@@ -238,38 +237,21 @@
     document.body.append(a); a.click(); a.remove();
   });
 
-  // ── 一个交易日的详情 ──
+  // ── 一个交易日的详情：结果、主导因素与理由、收盘后的市场，一页读完 ──
   function openDay(date) {
     let d = daily.find(x => x.date === date);
     if (!d) { setRange('all'); d = daily.find(x => x.date === date); }
     if (!d) return;
-    const near = H.reports.filter(r => r.assetKeys.indexOf('美股') >= 0 && fmt.days(r.date, date) >= 0 && fmt.days(r.date, date) <= 7);
-    const reasons = d.reasons || [], risks = d.risks || [], settled = d.spyClose != null;
-    const tabs = [{ label: '判断', build: () => [
-      block.sect('主导因素', block.p(d.dominant)), block.sect('理由', reasons.map(block.p)),
-      block.sect('相关研报', near.length ? el('ul', null, near.map(r => el('li', null, el('a', { class: 'plain', href: 'report.html?id=' + encodeURIComponent(r.id), text: r.date + '　' + r.title })))) : null)].flat() }];
-    if (risks.length) tabs.push({ label: '风险', count: risks.length, build: () => block.list(risks) });
-    tabs.push({ label: '口径', build: () => [
-      block.sect('结算', block.p('按 SPY 常规时段开盘到收盘的涨跌方向结算。'),
-        block.defs([['预测完成', utc(d.completedAt)], ['信息截至', utc(d.coverageUntil)], !d.official ? ['统计', '未计入'] : null])),
-      block.sect('模拟交易', block.defs([['说明', noteOf(d)], d.traded ? ['方向', d.side > 0 ? '做多一手' : '做空一手'] : null,
-        ['入场价', d.traded ? fmt.num(d.entry, 2) : null], ['离场价', d.traded ? fmt.num(d.exit, 2) : null],
-        ['取价时间', d.traded && state.settings.basis === 'futures' && d.futuresStart ? d.futuresStart + ' 至 ' + String(d.futuresEnd).slice(11) + '（美东）' : null],
-        ['毛收益', d.traded ? fmt.usd(d.gross) : null], ['费用与滑点', d.traded ? '$' + fmt.num((d.fee || 0) + (d.slip || 0), 2) : null], ['净收益', d.traded ? fmt.usd(d.net) : null]]))].flat() });
-    tabs.push({ label: '验证', build: () => [
-      block.sect('结算结果', settled
-        ? el('dl', { class: 'kvs' }, [['SPY 开盘', d.spyOpen], ['SPY 收盘', d.spyClose], ['开盘到收盘', fmt.pct(d.spyReturn)], ['结果', hitCN(d)]].map(([k, v]) => el('div', { class: 'kv-b' }, el('dt', { text: k }), el('dd', { text: v == null ? '—' : v }))))
-        : block.p('待结算。')),
-      block.sect('收盘后复盘', block.p(d.reflection))].flat() });
+    const settled = d.spyClose != null;
     Site.untip();
     Site.dossier({
       hash: date, kicker: '标普500 预测', title: fmt.cny(date),
       line: settled
-        ? ['盘前预测' + dirCN(d.direction) + '。SPY 开盘 ' + d.spyOpen + '，收盘 ' + d.spyClose + '，', signed(d.spyReturn, fmt.pct(d.spyReturn)), '，' + hitCN(d) + '。']
-        : '盘前预测' + dirCN(d.direction) + '，待结算。',
+        ? ['预测' + dirCN(d.direction) + '。SPY 开盘 ' + d.spyOpen + '，收盘 ' + d.spyClose + '，', signed(d.spyReturn, fmt.pct(d.spyReturn)), '，' + hitCN(d) + '。']
+        : '预测' + dirCN(d.direction) + '，待结算。',
       facts: [['置信度', d.confidence != null ? d.confidence + ' / 10' : '—'], hasActions ? ['交易动作', actionCN(d.action)] : null,
         d.traded ? ['当日模拟净收益', signed(d.net, fmt.usd(d.net))] : null],
-      tabs: tabs,
+      tabs: [{ label: '判断', build: () => [block.sect('主导因素', block.p(d.dominant)), block.sect('理由', block.p(d.why)), block.sect('收盘后', block.p(d.review))].flat() }],
     });
   }
 

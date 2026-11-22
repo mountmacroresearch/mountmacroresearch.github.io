@@ -182,7 +182,7 @@
     const h0 = pt(R.index - 22, a), h1 = pt(R.index + 22, a);
     g.append(sv('line', { x1: h0[0], y1: h0[1], x2: h1[0], y2: h1[1], stroke: 'transparent', 'stroke-width': 5.6 }));
     link(g, 'forecast.html#' + r.d, r.d);
-    hover(g, () => [el('b', { text: r.d }), kv('盘前预测', r.dir === 'up' ? '上涨' : '下跌'),
+    hover(g, () => [el('b', { text: r.d }), kv('预测', r.dir === 'up' ? '上涨' : '下跌'),
       kv('SPY 开盘到收盘', fmt.pct(r.ret)), kv('结果', !r.official ? '未计入' : r.hit == null ? '待结算' : r.hit ? '判对' : '判错'), kv('置信度', r.conf + ' / 10')]);
     bars.append(g);
   });
@@ -191,7 +191,7 @@
     const tipY = p[1] - Math.max(0, Math.min(L.spyReturn || 0, CAP)) * SC - 8;
     const g = sv('g', { class: 'hot rise' });
     g.append(sv('path', { d: 'M' + p[0] + ' ' + tipY + 'V' + (q[1] - 50) + 'H' + (q[0] - 8), fill: 'none', stroke: '#cfb07a', 'stroke-opacity': .6 }),
-      sv('text', { class: 't2', x: q[0], y: q[1] - 55 }, sv('tspan', { class: 'tn' }, fmt.md(L.date) + ' '), '盘前'),
+      sv('text', { class: 't2', x: q[0], y: q[1] - 55 }, sv('tspan', { class: 'tn' }, fmt.md(L.date))),
       sv('text', { class: 't', x: q[0], y: q[1] - 34 }, '预测' + (L.direction === 'up' ? '上涨' : '下跌') + (L.hit == null ? '，待结算' : '，收盘 ' + fmt.pct(L.spyReturn) + '，' + (L.hit ? '判对' : '判错'))));
     bars.append(link(g, 'forecast.html#' + L.date, '最新预测'));
   })();
@@ -297,7 +297,7 @@
       el('tr', null,
         el('td', null, el('h3', null, '指数', el('small', { text: '标普500' }))),
         el('td', null,
-          el('p', { class: 'judg' }, el('b', { text: fmt.cn(L.date) + '盘前预测' + (L.direction === 'up' ? '上涨' : '下跌') }), '，置信度 ' + L.confidence + ' / 10。' + (L.dominant ? L.dominant.replace(/。$/, '') + '。' : '')),
+          el('p', { class: 'judg' }, el('b', { text: fmt.cn(L.date) + '预测' + (L.direction === 'up' ? '上涨' : '下跌') }), '，置信度 ' + L.confidence + ' / 10。' + (L.dominant ? L.dominant.replace(/。$/, '') + '。' : '')),
           settledL ? el('p', { class: 'judg' }, 'SPY 开盘 ' + L.spyOpen + '，收盘 ' + L.spyClose + '，', signed(L.spyReturn, fmt.pct(L.spyReturn)), '，' + (L.hit ? '判对。' : '判错。')) : null),
         el('td', null, el('div', { class: 'figs' }, fig(pctOf(S.hits, S.settled), '方向命中率，' + S.hits + ' / ' + S.settled), fig(last20.filter(r => r.hit).length + ' / ' + last20.length, '近 20 日判对'))),
         el('td', null, el('p', { class: 'fine', text: S.days + ' 个交易日，自 ' + fmt.cny(S.first) })),

@@ -14,9 +14,6 @@
   const GRADE = { A: 'A 级', B: 'B 级，重点跟踪', C: 'C 级，当前不推荐', Reject: '原假说被否定', 'Data Hold': '证据不足，暂缓', 'Research Pending': '研究未完成' };
   const STAGE = { not_prioritized: '初步评估后未列入优先', nominate: '进入深入研究', tier0_excluded: '初筛排除' };
   const LOGIC = { confirmed: '得到印证', weakened: '被削弱', inconclusive: '尚无定论', refuted: '被否定' };
-  const KIND = { research_task: '研究任务', falsifier: '证伪检查', catalyst: '催化观察', evaluation: '复盘评价' };
-  const GATE = { data_eligibility: '数据资格', causality: '因果链', exposure_expectations: '业务暴露与预期', valuation_falsification: '估值与证伪' };
-  const PASS = { PASS: '通过', FAIL: '未通过', CONDITIONAL: '有条件通过', PENDING: '待定', DEPRIORITIZED: '未列入优先' };
   const BUCKET = { Conditional: '有条件', Avoid: '回避', Attractive: '看好', Priority: '看好', Insufficient: '证据不足' };
   const PRICED = { fully_priced: '已充分反映', partially_priced: '部分反映', unknown: '无法判断' };
   const VALUE = { acceptable: '在可接受范围内', outside: '不在可接受范围内', unknown: '无法判断' };
@@ -213,8 +210,8 @@
   const okQ = (x, extra) => { const q = state.q.trim().toLowerCase(); return !q || [x.name, x.ticker, x.industry, indCN(x.industry || ''), extra].filter(Boolean).join(' ').toLowerCase().indexOf(q) >= 0; };
   const rowOpen = fn => ({ class: 'open', tabindex: '0', on: { click: fn, keydown: e => { if (e.key === 'Enter') fn(); } } });
   const price = c => (c.price && c.price.value != null ? (c.price.currency === 'USD' ? '$' : '¥') + fmt.num(c.price.value, 2) : '—');
-  // 核心假设：因果链的起点；后面的环节在详情里逐级列出
-  const thesis = c => (c.chain && c.chain.length ? c.chain[0].label : c.core) || '—';
+  // 核心假设：因果链从驱动到利润连成一句，分叉的链每条连线一行
+  const thesis = c => (c.chain ? c.chain.lines.join('；') : '—');
 
   function drawA() {
     const list = As.filter(c => okMarket(c) && okQ(c));
@@ -252,17 +249,16 @@
   Site.seg(document.getElementById('f-grade'), [['all', '全部 ' + (G.B + G.C + G.Reject + G.pending + G.hold)]].concat(G.B ? [['B', 'B 级 ' + G.B]] : [], [['C', 'C 级 ' + G.C], ['Reject', '被否定 ' + G.Reject]]), 'all', v => { state.grade = v; drawC(); });
   document.getElementById('f-q').addEventListener('input', e => { state.q = e.target.value; drawAll(); });
 
-  // 已排定的验证，按时间点汇总
+  // 已排定的复核，按时间点汇总
   (function () {
     const byTime = new Map();
-    D.schedule.forEach(s => { const k = at(s.due), o = byTime.get(k) || { n: 0, kinds: {}, blocked: 0, a: new Set() }; o.n++; o.kinds[s.kind] = (o.kinds[s.kind] || 0) + 1; if (s.state === 'blocked') o.blocked++; const co = byId.get(s.sid); if (co && co.bucket === 'A') o.a.add(co.name); byTime.set(k, o); });
+    D.schedule.forEach(s => { const k = at(s.due), o = byTime.get(k) || { n: 0, a: new Set() }; o.n++; const co = byId.get(s.sid); if (co && co.bucket === 'A') o.a.add(co.name); byTime.set(k, o); });
     As.forEach(c => { const o = byTime.get(at(c.nextCheck)); if (o) o.a.add(c.name); });
     add(document.getElementById('sch-table'),
-      el('thead', null, el('tr', null, [['复核时间（北京时间）'], ['事项', 'n'], ['研究任务', 'n'], ['证伪检查', 'n'], ['催化观察', 'n'], ['其中等待证据', 'n'], ['涉及的 A 级公司']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
+      el('thead', null, el('tr', null, [['复核时间（北京时间）'], ['事项', 'n'], ['涉及的 A 级公司']].map(h => el('th', { class: h[1] || null, text: h[0] })))),
       el('tbody', null, [...byTime.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([k, o]) => el('tr', null,
         el('td', { style: 'font-family:var(--num);white-space:nowrap', text: k }), el('td', { class: 'n', text: o.n }),
-        el('td', { class: 'n', text: o.kinds.research_task || '—' }), el('td', { class: 'n', text: o.kinds.falsifier || '—' }), el('td', { class: 'n', text: o.kinds.catalyst || '—' }),
-        el('td', { class: 'n', text: o.blocked || '—' }), el('td', { text: [...o.a].join('、') || '—' })))));
+        el('td', { text: [...o.a].join('、') || '—' })))));
   })();
 
   // ── 详情 ──
@@ -287,13 +283,26 @@
         el('td', { class: 'n', text: String(o.window) }),
         el('td', { class: 'n' }, signed(o.abs, fmt.pct(o.abs * 100))), el('td', { class: 'n', text: fmt.pct(o.bench * 100) + ' ' + String(o.benchmark || '').replace(/^[A-Z]{2}:/, '') }), el('td', { class: 'n' }, signed(o.rel, fmt.pct(o.rel * 100))))))));
   }
+  // 公司详情里的复核日程只列复核和事件；证伪、催化的检查时间已写在各自栏目里
   function schedList(sid) {
-    const list = (schedBy.get(sid) || []).slice().sort((a, b) => String(a.due).localeCompare(String(b.due)));
-    return block.sect('复核日程（北京时间）', list.length ? el('ul', null, list.map(s => el('li', { text: at(s.due) + '　' + (KIND[s.kind] || '复核') + (s.state === 'blocked' ? '，等待证据' : '') + (s.question ? '：' + s.question.replace(/。$/, '') : '') }))) : null);
+    const list = (schedBy.get(sid) || []).filter(s => s.kind === 'research_task').sort((a, b) => String(a.due).localeCompare(String(b.due)));
+    return block.sect('复核日程（北京时间）', list.length ? el('ul', null, list.map(s => el('li', { text: at(s.due) + '　复核' + (s.state === 'blocked' ? '，等待证据' : '') + (s.question ? '：' + s.question.replace(/。$/, '') : '') }))) : null);
+  }
+  // 同一段话被填进几个栏目时，只在第一次出现的地方显示：按页面顺序走一遍，已完整出现过的段落不再重复
+  function fresh() {
+    const seen = [], key = t => String(t).replace(/[。；\s]+$/, '');
+    return t => { if (!t) return null; const k = key(t); if (seen.some(s => s.indexOf(k) >= 0)) return null; seen.push(k); return t; };
   }
   function openCompany(id) {
     const c = byId.get(id); if (!c) return;
     const oc = (outcomesBy.get(id) || []).slice().sort(byEnd);
+    const once = fresh(), v = {};   // 按显示顺序：判断、依据、验证
+    v.watch = once(c.watch); v.whys = c.chain ? c.chain.whys.filter(once) : [];
+    v.whyNow = once(c.whyNow); v.wedge = once(c.expect.wedge); v.investableIf = once(c.investableIf);
+    v.exposure = once(c.exposure.summary); v.threshold = once(c.valuation.threshold); v.consensus = once(c.expect.consensus);
+    v.catalysts = c.catalysts.filter(t => once(t.text));
+    v.falsifiers = c.falsifiers.filter(f => once(f.text)); v.firstRejection = c.falsifiers.length ? null : once(c.firstRejection);
+    v.counter = once(c.counter); v.risks = c.risks.filter(once);
     Site.untip();
     Site.dossier({
       hash: id, kicker: '个股机会', title: c.name + '　' + c.ticker,
@@ -301,21 +310,18 @@
       facts: [['市场与行业', mktCN(c.market) + '　' + indCN(c.industry)], ['研究时价格，' + fmt.md(c.price.at), price(c)], horizonCN(c.horizon) ? ['预期期限', horizonCN(c.horizon)] : null,
         ['下次复核', when(c.nextCheck)], c.expires ? ['假设到期', when(c.expires)] : null],
       tabs: [
-        { label: '判断', build: () => [block.sect('重点跟踪依据', block.p(c.watch)), block.sect('核心假设', block.p(thesis(c))),
-          block.sect('传导', c.chain && c.chain.length > 1 ? el('ol', { class: 'chain' }, c.chain.slice(1).map(x => el('li', null, x.label, x.why ? el('div', { class: 'quiet', text: x.why }) : null))) : null),
-          block.sect('为什么是现在', block.p(c.whyNow)),
-          block.sect('与市场看法的差别', block.p(c.expect.wedge)), block.sect('重新考虑的条件', block.p(c.investableIf))].flat() },
+        { label: '判断', build: () => [block.sect('重点跟踪依据', block.p(v.watch)),
+          block.sect('核心假设', c.chain ? c.chain.lines.map(block.p) : null, v.whys.map(block.quiet)),
+          block.sect('为什么是现在', block.p(v.whyNow)),
+          block.sect('与市场看法的差别', block.p(v.wedge)), block.sect('重新考虑的条件', block.p(v.investableIf))].flat() },
         { label: '依据', build: () => [
-          block.sect('业务暴露', block.p(c.exposure.summary), block.defs([['财务科目', c.exposure.line], ['重要性', LEVEL[c.exposure.materiality]]])),
-          block.sect('估值', block.p(c.valuation.threshold), block.defs([['方法', c.valuation.method], ['当前估值', VALUE[c.valuation.status]]])),
-          block.sect('市场预期', block.defs([['价格已反映的程度', PRICED[c.expect.pricedIn]], ['一致预期', c.expect.consensus]])),
-          block.sect('催化', c.catalysts.length ? el('ul', null, c.catalysts.map(t => el('li', null, t.text, t.check ? el('div', { class: 'quiet', text: '下次检查 ' + when(t.check) + (t.condition ? '：' + t.condition : '') }) : null))) : null)].flat() },
-        { label: '口径', build: () => [
-          block.sect('评级门槛', c.gates.length ? el('dl', { class: 'defs' }, c.gates.map(g => [el('dt', { text: GATE[g.gate] || g.gate }), el('dd', { text: PASS[g.status] || g.status })])) : null),
-          block.sect('价格', block.defs([['研究时价格', c.price.value != null ? price(c) + '，' + when(c.price.at) : null]]))].flat() },
-        { label: '验证', count: c.falsifiers.length + oc.length, build: () => [
-          block.sect('证伪条件', c.falsifiers.length ? el('ul', null, c.falsifiers.map(f => el('li', null, f.text, f.check ? el('div', { class: 'quiet', text: '检查时间 ' + when(f.check) }) : null))) : block.p(c.firstRejection)),
-          block.sect('反方观点', block.p(c.counter)), block.sect('风险', block.list(c.risks)),
+          block.sect('业务暴露', block.p(v.exposure), block.defs([['财务科目', c.exposure.line], ['重要性', LEVEL[c.exposure.materiality]]])),
+          block.sect('估值', block.p(v.threshold), block.defs([['方法', c.valuation.method], ['当前估值', VALUE[c.valuation.status]]])),
+          block.sect('市场预期', block.defs([['价格已反映的程度', PRICED[c.expect.pricedIn]], ['一致预期', v.consensus]])),
+          block.sect('催化', v.catalysts.length ? el('ul', null, v.catalysts.map(t => el('li', null, t.text, t.check ? el('div', { class: 'quiet', text: '下次检查 ' + when(t.check) + (t.condition ? '：' + t.condition : '') }) : null))) : null)].flat() },
+        { label: '验证', count: v.falsifiers.length + oc.length, build: () => [
+          block.sect('证伪条件', v.falsifiers.length ? el('ul', null, v.falsifiers.map(f => el('li', null, f.text, f.check ? el('div', { class: 'quiet', text: '检查时间 ' + when(f.check) }) : null))) : block.p(v.firstRejection)),
+          block.sect('反方观点', block.p(v.counter)), block.sect('风险', block.list(v.risks)),
           schedList(id), block.sect('评级期间表现', ratingTable(oc.filter(o => o.grade))), block.sect('复盘', outcomeTable(oc.filter(o => !o.grade)))].flat() },
       ],
     });
@@ -323,7 +329,6 @@
   function openCoverage(c) {
     const tabs = [];
     if (c.reason) tabs.push({ label: '判断', build: () => block.sect('未进入深入研究的原因', block.p(c.reason)) });
-    if (c.basis) tabs.push({ label: '口径', build: () => block.sect('初筛口径', block.p(c.basis)) });
     tabs.push({ label: '验证', build: () => [block.sect('下次复核', block.p(c.revisit ? (c.own ? '计划在 ' : '随所在行业在 ') + when(c.revisit) + ' 复核。' : '暂未排定。')), schedList(c.id)].flat() });
     Site.untip();
     Site.dossier({
@@ -335,7 +340,7 @@
     const mine = companies.filter(c => c.market === i.market && c.industry === i.name);
     const tabs = [{ label: '判断', build: () => [block.sect('现在的看法', block.p(i.whyNow)), block.sect('驱动因素', block.list(i.drivers)),
       block.sect('深入研究过的公司', mine.length ? el('ul', null, mine.map(c => el('li', null, el('button', { class: 'plain', type: 'button', text: c.name, on: { click: () => openCompany(c.id) } }), '　' + (GRADE[c.bucket] || c.bucket)))) : null)].flat() }];
-    if ((i.reasons || []).length || (i.kpis || []).length) tabs.push({ label: '依据', build: () => [block.sect('判断理由', block.list(i.reasons)), block.sect('跟踪指标', block.list(i.kpis))].flat() });
+    if ((i.kpis || []).length) tabs.push({ label: '依据', build: () => block.sect('跟踪指标', block.list(i.kpis)) });
     if (i.firstRejection || i.minority || i.nextKpi) tabs.push({ label: '验证', build: () => [block.sect('证伪条件', block.p(i.firstRejection)), block.sect('不同的看法', block.p(i.minority)), block.sect('下一个确认指标', block.p(i.nextKpi))].flat() });
     Site.dossier({
       kicker: '个股机会　行业', title: indCN(i.name) + '　' + mktCN(i.market), line: i.whyNow,

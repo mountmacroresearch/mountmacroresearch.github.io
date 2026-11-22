@@ -181,7 +181,6 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; line-heig
 .dossier .body h4 { font: 600 14px/1.6 var(--sans); letter-spacing: .04em; margin: 26px 0 8px } .dossier .body h4:first-child { margin-top: 0 }
 .dossier .body p { max-width: 68ch; text-wrap: pretty; white-space: pre-line } .dossier .body p + p { margin-top: 10px }
 .dossier .body ul { margin: 0; padding-left: 1.2em; max-width: 68ch } .dossier .body li + li { margin-top: 8px }
-.dossier .body ol.chain { margin: 0; padding: 0; list-style: none; max-width: 68ch } .dossier .body ol.chain li { position: relative; padding-left: 1.6em } .dossier .body ol.chain li::before { content: "→"; position: absolute; left: 0; color: var(--p-accent) }
 .dossier .body .defs { display: grid; grid-template-columns: max-content 1fr; gap: 6px 22px; font-size: 13.5px }
 .dossier .body .defs dt { color: var(--p-ink2) } .dossier .body .defs dd { overflow-wrap: anywhere }
 .dossier .body .quiet { color: var(--p-ink2); font-size: 13px }
