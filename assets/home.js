@@ -100,13 +100,16 @@
       sv('path', { d: arc(R[k], TH0, aT), fill: 'none', stroke: '#cfb07a', 'stroke-opacity': .36, 'stroke-width': 1 }),
       sv('path', { d: arc(R[k], aT, TH1), fill: 'none', stroke: '#cfb07a', 'stroke-opacity': .42, 'stroke-width': 1, 'stroke-dasharray': '1 7', 'stroke-linecap': 'round' }));
   });
-  Site.months(T0, T1, (R.stock + 102) * (TH1 - TH0)).forEach(([t, label]) => {
-    const a = thMs(t), p0 = pt(R.stock + 78, a), p1 = pt(R.stock + 86, a), pl = pt(R.stock + 102, a);
-    frame.append(
-      sv('line', { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: '#cfb07a', 'stroke-opacity': .5 }),
-      sv('text', { class: 't3', x: pl[0], y: pl[1], 'text-anchor': 'middle' }, label));
-  });
+  // “今天”和月份写在同一道弧上：月份的字会和“今天”的字重叠时只画刻度线（字宽按字数估：中文 12.5，数字和符号 7.5）
   const r0 = pt(R.sun + 5, aT), r1 = pt(R.stock + 86, aT), rl = pt(R.stock + 102, aT);
+  const wide = s => [...s].reduce((w, ch) => w + (/[一-鿿]/.test(ch) ? 12.5 : 7.5), 0);
+  const todayEnd = rl[0] + 8 + wide('今天 ' + fmt.md(today));
+  Site.months(T0, T1, (R.stock + 102) * (TH1 - TH0)).forEach(([t, label]) => {
+    const a = thMs(t), p0 = pt(R.stock + 78, a), p1 = pt(R.stock + 86, a), pl = pt(R.stock + 102, a), w = wide(label) / 2;
+    const clash = pl[0] + w > rl[0] && pl[0] - w < todayEnd + 6 && Math.abs(pl[1] - rl[1]) < 14;
+    frame.append(sv('line', { x1: p0[0], y1: p0[1], x2: p1[0], y2: p1[1], stroke: '#cfb07a', 'stroke-opacity': .5 }));
+    if (!clash) frame.append(sv('text', { class: 't3', x: pl[0], y: pl[1], 'text-anchor': 'middle' }, label));
+  });
   frame.append(
     sv('line', { x1: r0[0], y1: r0[1], x2: r1[0], y2: r1[1], stroke: '#f1eadb', 'stroke-opacity': .5, 'stroke-width': 1 }),
     sv('text', { class: 't2', x: rl[0] + 8, y: rl[1] }, '今天 ', sv('tspan', { class: 'tn' }, fmt.md(today))));

@@ -105,7 +105,7 @@
   const aNodes = As.map(c => ({ c: c, p: P(RA, c.deg) })).sort((a, b) => a.c.deg - b.c.deg);
   // 相邻的点靠得近时，名字在三层之间轮换（两层时第一个和第三个会叠在一起）。
   // 中间一段的名字居中排，看角度差；两侧的名字横着排，看两个点竖直方向是否不足一个名字的高度
-  let prevDeg = -1e9, prevTier = 0;
+  let prevDeg = -1e9, prevTier = 0, prevAt = null;
   const aGroups = [];
   aNodes.forEach(n => {
     const c = n.c, p = n.p, deg = c.deg, label = c.market === 'US' ? c.ticker : c.name;
@@ -114,9 +114,14 @@
     const tier = near ? (prevTier + 1) % 3 : 0;
     prevDeg = deg; prevTier = tier;
     // 两侧每一层沿射线外移到竖直方向高出 34（名字加行业两行的高度）
-    const out = side === 'middle' ? 36 + 38 * tier : 22 + 34 * tier / Math.cos(deg * DEG);
-    const q = P(RA + out, deg);
-    const tx = q[0] + (side === 'end' ? -4 : side === 'start' ? 4 : 0), ty = q[1] + (side === 'middle' ? -10 : 0);
+    const step = side === 'middle' ? 38 : 34;
+    let out = side === 'middle' ? 36 + step * tier : 22 + step * tier / Math.cos(deg * DEG);
+    const at = o => { const q = P(RA + o, deg); return [q[0] + (side === 'end' ? -4 : side === 'start' ? 4 : 0), q[1] + (side === 'middle' ? -10 : 0)]; };
+    // 两个点的角度不同，沿射线外移后高出的会不足一层：和前一个名字左右相距不到一个名字宽时，补足到比它高一层
+    const lift = tier && prevAt && Math.abs(at(out)[0] - prevAt[0]) < 64 ? step - (prevAt[1] - at(out)[1]) : 0;
+    if (lift > 0) out += lift / Math.cos(deg * DEG);
+    const [tx, ty] = at(out);
+    prevAt = [tx, ty];
     const g = sv('g', { class: 'hot dim rise', 'data-id': c.id, tabindex: '0', role: 'link', 'aria-label': c.name + '，A 级' });
     if (tier) { const l0 = P(RA + 14, deg), l1 = P(RA + out - (side === 'middle' ? 22 : 8), deg); g.append(sv('line', { x1: l0[0], y1: l0[1], x2: l1[0], y2: l1[1], stroke: '#cfb07a', 'stroke-opacity': .5 })); }
     g.append(sv('circle', { cx: p[0], cy: p[1], r: 17, fill: 'url(#node)' }), sv('circle', { cx: p[0], cy: p[1], r: 3, fill: '#fff8e6' }),
